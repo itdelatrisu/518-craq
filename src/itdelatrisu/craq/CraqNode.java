@@ -1,5 +1,10 @@
 package itdelatrisu.craq;
 
+import java.util.HashMap;
+import java.util.Map;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
+
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
@@ -13,13 +18,34 @@ import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import itdelatrisu.craq.thrift.CraqConsistencyModel;
+import itdelatrisu.craq.thrift.CraqObject;
+import itdelatrisu.craq.thrift.CraqService;
+
 /** CRAQ server node. */
-public class CraqNode {
+public class CraqNode implements CraqService.Iface {
 	private static final Logger logger = LoggerFactory.getLogger(CraqNode.class);
 
+	// TODO: predecessor, successor, or whole chain?
+
+	/** Whether this node is running in CR mode (not CRAQ). */
+	private final boolean crMode;
+
+	/** Current known objects: <version, bytes> */
+	private final Map<Integer, CraqObject> objects = new HashMap<>();
+
+	/** Synchronization aids for unacknowledged versions. */
+	private final Map<Integer, CountDownLatch> syncMap = new HashMap<>();
+
+	/** The latest known clean object version. */
+	private int latestCleanVersion = -1;
+
+	/** The latest known version (clean or dirty). */
+	private int latestVersion = -1;
+
 	/** Creates a new CRAQ node. */
-	public CraqNode() {
-		// TODO
+	public CraqNode(boolean crMode) {
+		this.crMode = crMode;
 	}
 
 	/** Starts the server. */
@@ -33,18 +59,18 @@ public class CraqNode {
 		}
 
 		// TODO test code
-		try {
-			connectToClient("localhost", port);
-		} catch (TException e) {
-			logger.error("Failed to connect to Thrift client.", e);
-		}
+//		try {
+//			connectToClient("localhost", port);
+//		} catch (TException e) {
+//			logger.error("Failed to connect to Thrift client.", e);
+//		}
 	}
 
 	/** Starts the Thrift server. */
 	@SuppressWarnings({"rawtypes", "unchecked"})
 	private void runServer(int port) throws TTransportException {
 		TServerTransport serverTransport = new TServerSocket(port);
-		CraqService.Processor processor = new CraqService.Processor(new CraqServiceImpl());
+		CraqService.Processor processor = new CraqService.Processor(this);
 
 		TServer server = new TThreadPoolServer(new TThreadPoolServer.Args(serverTransport).processor(processor));
 		logger.info("Starting Thrift server on port {}...", port);
@@ -60,8 +86,155 @@ public class CraqNode {
 		TProtocol protocol = new TBinaryProtocol(transport);
 		CraqService.Client client = new CraqService.Client(protocol);
 
-		logger.info("100 + 200 = {}", client.add(100, 200));
-
 		transport.close();
+	}
+
+	/** Returns whether this node is the head of its chain. */
+	private boolean isHead() { /* TODO */ return true; }
+
+	/** Returns whether this node is the tail of its chain. */
+	private boolean isTail() { /* TODO */ return true; }
+
+	@Override
+	public CraqObject read(CraqConsistencyModel model) throws TException {
+		logger.debug("Received read request from client...");
+
+		// no objects stored?
+		if (objects.isEmpty())
+			return new CraqObject();
+
+		// running normal CR: fail if we're not the tail
+		if (crMode && !isTail())
+			return new CraqObject();
+
+		// strong consistency?
+		if (model == CraqConsistencyModel.STRONG) {
+			if (latestVersion > latestCleanVersion) {
+				// latest known version isn't clean
+				// TODO send version query
+				//int tailVersion = tail.versionQuery();
+				//return objects.get(tailVersion);
+			} else {
+				// latest known version is clean, return it
+				return objects.get(latestCleanVersion);
+			}
+		}
+
+		// eventual consistency?
+		else if (model == CraqConsistencyModel.EVENTUAL) {
+			// return latest known version
+			return objects.get(latestVersion);
+		}
+
+		// TODO bounded eventual consistency?
+
+		logger.error("!! read() shouldn't get here !!");
+		return new CraqObject();
+	}
+
+	@Override
+	public boolean write(CraqObject obj) throws TException {
+		logger.debug("Received write request from client...");
+
+		// can only write to head
+		if (!isHead())
+			return false;
+
+		int newVersion;
+		synchronized (this) {
+			// record new object version
+			newVersion = latestVersion + 1;
+			objects.put(newVersion, obj);
+			latestVersion++;
+
+			// TODO send down chain
+			// TODO multicast optimization
+			//successor.writeVersioned(obj, newVersion);
+		}
+
+		// wait for acknowledgement before returning to the client
+		CountDownLatch signal = new CountDownLatch(1);
+		syncMap.put(newVersion, signal);
+		try {
+			//signal.await();
+			// TODO: timeout here for testing, delete it later
+			return signal.await(3, TimeUnit.SECONDS);
+		} catch (InterruptedException e) {
+			logger.error("Interrupted before receiving acknowledgement for version: {}", newVersion);
+			return false;
+		} finally {
+			syncMap.remove(newVersion);
+		}
+
+		//return true;
+	}
+
+	@Override
+	public void writeVersioned(CraqObject obj, int version) throws TException {
+		logger.debug("Propagating write with version: {}", version);
+
+		// add new object version
+		objects.put(version, obj);
+
+		// update latest version
+		synchronized (this) {
+			if (version > latestVersion)
+				latestVersion = version;
+		}
+
+		if (isTail()) {
+			if (version > latestCleanVersion)
+				latestCleanVersion = version;
+
+			// TODO send acknowledgement up chain
+			// TODO: multicast optimization
+			//predecessor.ack(version);
+		} else {
+			// TODO send down chain
+			//successor.writeVersioned(obj, version);
+		}
+	}
+
+	@Override
+	public void ack(int version) throws TException {
+		logger.debug("Received acknowledgement for version: {}", version);
+
+		// tail should not receive acks
+		if (isTail())
+			return;
+
+		// record clean version
+		if (version > latestCleanVersion)
+			latestCleanVersion = version;
+
+		if (isHead()) {
+			// head: notify blocked write() thread
+			CountDownLatch signal = syncMap.get(version);
+			if (signal != null)
+				signal.countDown();
+		} else {
+			// TODO send up chain
+			//predecessor.ack(version);
+		}
+	}
+
+	@Override
+	public int versionQuery() throws TException {
+		logger.debug("Received version query...");
+
+		// only tail should receive version queries
+		if (!isTail())
+			return -1;
+
+		// return latest clean version
+		return latestCleanVersion;
+	}
+
+	/** Starts the CRAQ server node. */
+	public static void main(String[] args) {
+		int port = (args.length < 1) ? 9090 : Integer.parseInt(args[0]);
+		boolean crMode = false;  // TODO command line param?
+		CraqNode node = new CraqNode(crMode);
+		node.start(port);
 	}
 }
