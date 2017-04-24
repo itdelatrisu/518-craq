@@ -1,6 +1,7 @@
 package itdelatrisu.craq;
 
 import java.util.HashMap;
+import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -30,12 +31,20 @@ public class CraqNode implements CraqService.Iface {
 
 	/** Whether this node is running in CR mode (not CRAQ). */
 	private final boolean crMode;
+	private final boolean head;
+	private final boolean tail;
+	
+	//can be changed?
+	private CraqNode predecessor;
+	private CraqNode successor;
+	
+	private LinkedList<Integer> versions;
 
 	/** Current known objects: <version, bytes> */
-	private final Map<Integer, CraqObject> objects = new HashMap<>();
+	//private final Map<Integer, CraqObject> objects = new HashMap<>();
 
 	/** Synchronization aids for unacknowledged versions. */
-	private final Map<Integer, CountDownLatch> syncMap = new HashMap<>();
+	//private final Map<Integer, CountDownLatch> syncMap = new HashMap<>();
 
 	/** The latest known clean object version. */
 	private int latestCleanVersion = -1;
@@ -44,8 +53,15 @@ public class CraqNode implements CraqService.Iface {
 	private int latestVersion = -1;
 
 	/** Creates a new CRAQ node. */
-	public CraqNode(boolean crMode) {
+	public CraqNode(boolean crMode, boolean head, boolean tail, CraqNode predecessor, CraqNode successor) {
 		this.crMode = crMode;
+		this.head = head;
+		this.tail = tail;
+		this.predecessor = predecessor;
+		this.successor = successor;
+		
+		//if tail, it has only one element
+		this.versions = new LinkedList<Integer>();
 	}
 
 	/** Starts the server. */
@@ -90,18 +106,22 @@ public class CraqNode implements CraqService.Iface {
 	}
 
 	/** Returns whether this node is the head of its chain. */
-	private boolean isHead() { /* TODO */ return true; }
+	private boolean isHead() { 
+		return this.head; 
+	}
 
 	/** Returns whether this node is the tail of its chain. */
-	private boolean isTail() { /* TODO */ return true; }
+	private boolean isTail() { 
+		return this.tail; 
+	}
 
 	@Override
 	public CraqObject read(CraqConsistencyModel model) throws TException {
 		logger.debug("Received read request from client...");
 
 		// no objects stored?
-		if (objects.isEmpty())
-			return new CraqObject();
+		if (versions.isEmpty())
+			return new CraqObject(); // return null
 
 		// running normal CR: fail if we're not the tail
 		if (crMode && !isTail())
@@ -116,14 +136,17 @@ public class CraqNode implements CraqService.Iface {
 				//return objects.get(tailVersion);
 			} else {
 				// latest known version is clean, return it
-				return objects.get(latestCleanVersion);
+				// TODO I don't konw how to put the return value in
+				CraqObject return_obj = new CraqObject(versions.get(latestVersion));
+				return return_obj;
 			}
 		}
 
 		// eventual consistency?
 		else if (model == CraqConsistencyModel.EVENTUAL) {
-			// return latest known version
-			return objects.get(latestVersion);
+			// return latest known version				
+			CraqObject return_obj = new CraqObject(versions.get(latestVersion));
+			return return_obj;
 		}
 
 		// TODO bounded eventual consistency?
@@ -144,7 +167,8 @@ public class CraqNode implements CraqService.Iface {
 		synchronized (this) {
 			// record new object version
 			newVersion = latestVersion + 1;
-			objects.put(newVersion, obj);
+			versions.add(obj.return_value);//TODO obj.value?
+//			objects.put(newVersion, obj);
 			latestVersion++;
 
 			// TODO send down chain
@@ -152,21 +176,22 @@ public class CraqNode implements CraqService.Iface {
 			//successor.writeVersioned(obj, newVersion);
 		}
 
+		//we decided to use the return value as ack
 		// wait for acknowledgement before returning to the client
-		CountDownLatch signal = new CountDownLatch(1);
-		syncMap.put(newVersion, signal);
-		try {
-			//signal.await();
-			// TODO: timeout here for testing, delete it later
-			return signal.await(3, TimeUnit.SECONDS);
-		} catch (InterruptedException e) {
-			logger.error("Interrupted before receiving acknowledgement for version: {}", newVersion);
-			return false;
-		} finally {
-			syncMap.remove(newVersion);
-		}
+//		CountDownLatch signal = new CountDownLatch(1);
+//		syncMap.put(newVersion, signal);
+//		try {
+//			//signal.await();
+//			// TODO: timeout here for testing, delete it later
+//			return signal.await(3, TimeUnit.SECONDS);
+//		} catch (InterruptedException e) {
+//			logger.error("Interrupted before receiving acknowledgement for version: {}", newVersion);
+//			return false;
+//		} finally {
+//			syncMap.remove(newVersion);
+//		}
 
-		//return true;
+		return true;
 	}
 
 	@Override
@@ -174,7 +199,7 @@ public class CraqNode implements CraqService.Iface {
 		logger.debug("Propagating write with version: {}", version);
 
 		// add new object version
-		objects.put(version, obj);
+		versions.add(obj.return_value);
 
 		// update latest version
 		synchronized (this) {
@@ -195,28 +220,28 @@ public class CraqNode implements CraqService.Iface {
 		}
 	}
 
-	@Override
-	public void ack(int version) throws TException {
-		logger.debug("Received acknowledgement for version: {}", version);
-
-		// tail should not receive acks
-		if (isTail())
-			return;
-
-		// record clean version
-		if (version > latestCleanVersion)
-			latestCleanVersion = version;
-
-		if (isHead()) {
-			// head: notify blocked write() thread
-			CountDownLatch signal = syncMap.get(version);
-			if (signal != null)
-				signal.countDown();
-		} else {
-			// TODO send up chain
-			//predecessor.ack(version);
-		}
-	}
+//	@Override
+//	public void ack(int version) throws TException {
+//		logger.debug("Received acknowledgement for version: {}", version);
+//
+//		// tail should not receive acks
+//		if (isTail())
+//			return;
+//
+//		// record clean version
+//		if (version > latestCleanVersion)
+//			latestCleanVersion = version;
+//
+//		if (isHead()) {
+//			// head: notify blocked write() thread
+//			CountDownLatch signal = syncMap.get(version);
+//			if (signal != null)
+//				signal.countDown();
+//		} else {
+//			// TODO send up chain
+//			//predecessor.ack(version);
+//		}
+//	}
 
 	@Override
 	public int versionQuery() throws TException {
@@ -234,7 +259,23 @@ public class CraqNode implements CraqService.Iface {
 	public static void main(String[] args) {
 		int port = (args.length < 1) ? 9090 : Integer.parseInt(args[0]);
 		boolean crMode = false;  // TODO command line param?
-		CraqNode node = new CraqNode(crMode);
+		boolean head = false;
+		boolean tail = false;
+		CraqNode predecessor = null;
+		CraqNode successor = null;
+		CraqNode node = new CraqNode(crMode, head, tail, predecessor, successor);
 		node.start(port);
+	}
+
+	@Override
+	public int test_and_set(CraqObject obj) throws TException {
+		// TODO Auto-generated method stub
+		return 0;
+	}
+
+	@Override
+	public void ack(int version) throws TException {
+		// TODO Auto-generated method stub
+		
 	}
 }
