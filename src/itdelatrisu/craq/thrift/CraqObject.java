@@ -14,19 +14,16 @@ package itdelatrisu.craq.thrift;
 public class CraqObject implements org.apache.thrift.TBase<CraqObject, CraqObject._Fields>, java.io.Serializable, Cloneable, Comparable<CraqObject> {
   private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("CraqObject");
 
-  private static final org.apache.thrift.protocol.TField NULL_VALUE_FIELD_DESC = new org.apache.thrift.protocol.TField("null_value", org.apache.thrift.protocol.TType.STRING, (short)1);
-  private static final org.apache.thrift.protocol.TField RETURN_VALUE_FIELD_DESC = new org.apache.thrift.protocol.TField("return_value", org.apache.thrift.protocol.TType.I32, (short)2);
+  private static final org.apache.thrift.protocol.TField VALUE_FIELD_DESC = new org.apache.thrift.protocol.TField("value", org.apache.thrift.protocol.TType.STRING, (short)1);
 
   private static final org.apache.thrift.scheme.SchemeFactory STANDARD_SCHEME_FACTORY = new CraqObjectStandardSchemeFactory();
   private static final org.apache.thrift.scheme.SchemeFactory TUPLE_SCHEME_FACTORY = new CraqObjectTupleSchemeFactory();
 
-  public java.nio.ByteBuffer null_value; // optional
-  public int return_value; // optional
+  public java.nio.ByteBuffer value; // optional
 
   /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
   public enum _Fields implements org.apache.thrift.TFieldIdEnum {
-    NULL_VALUE((short)1, "null_value"),
-    RETURN_VALUE((short)2, "return_value");
+    VALUE((short)1, "value");
 
     private static final java.util.Map<java.lang.String, _Fields> byName = new java.util.HashMap<java.lang.String, _Fields>();
 
@@ -41,10 +38,8 @@ public class CraqObject implements org.apache.thrift.TBase<CraqObject, CraqObjec
      */
     public static _Fields findByThriftId(int fieldId) {
       switch(fieldId) {
-        case 1: // NULL_VALUE
-          return NULL_VALUE;
-        case 2: // RETURN_VALUE
-          return RETURN_VALUE;
+        case 1: // VALUE
+          return VALUE;
         default:
           return null;
       }
@@ -85,16 +80,12 @@ public class CraqObject implements org.apache.thrift.TBase<CraqObject, CraqObjec
   }
 
   // isset id assignments
-  private static final int __RETURN_VALUE_ISSET_ID = 0;
-  private byte __isset_bitfield = 0;
-  private static final _Fields optionals[] = {_Fields.NULL_VALUE,_Fields.RETURN_VALUE};
+  private static final _Fields optionals[] = {_Fields.VALUE};
   public static final java.util.Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
   static {
     java.util.Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new java.util.EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-    tmpMap.put(_Fields.NULL_VALUE, new org.apache.thrift.meta_data.FieldMetaData("null_value", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
+    tmpMap.put(_Fields.VALUE, new org.apache.thrift.meta_data.FieldMetaData("value", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
         new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.STRING        , true)));
-    tmpMap.put(_Fields.RETURN_VALUE, new org.apache.thrift.meta_data.FieldMetaData("return_value", org.apache.thrift.TFieldRequirementType.OPTIONAL, 
-        new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I32)));
     metaDataMap = java.util.Collections.unmodifiableMap(tmpMap);
     org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(CraqObject.class, metaDataMap);
   }
@@ -106,11 +97,9 @@ public class CraqObject implements org.apache.thrift.TBase<CraqObject, CraqObjec
    * Performs a deep copy on <i>other</i>.
    */
   public CraqObject(CraqObject other) {
-    __isset_bitfield = other.__isset_bitfield;
-    if (other.isSetNull_value()) {
-      this.null_value = org.apache.thrift.TBaseHelper.copyBinary(other.null_value);
+    if (other.isSetValue()) {
+      this.value = org.apache.thrift.TBaseHelper.copyBinary(other.value);
     }
-    this.return_value = other.return_value;
   }
 
   public CraqObject deepCopy() {
@@ -119,87 +108,54 @@ public class CraqObject implements org.apache.thrift.TBase<CraqObject, CraqObjec
 
   @Override
   public void clear() {
-    this.null_value = null;
-    setReturn_valueIsSet(false);
-    this.return_value = 0;
+    this.value = null;
   }
 
-  public byte[] getNull_value() {
-    setNull_value(org.apache.thrift.TBaseHelper.rightSize(null_value));
-    return null_value == null ? null : null_value.array();
+  public byte[] getValue() {
+    setValue(org.apache.thrift.TBaseHelper.rightSize(value));
+    return value == null ? null : value.array();
   }
 
-  public java.nio.ByteBuffer bufferForNull_value() {
-    return org.apache.thrift.TBaseHelper.copyBinary(null_value);
+  public java.nio.ByteBuffer bufferForValue() {
+    return org.apache.thrift.TBaseHelper.copyBinary(value);
   }
 
-  public CraqObject setNull_value(byte[] null_value) {
-    this.null_value = null_value == null ? (java.nio.ByteBuffer)null : java.nio.ByteBuffer.wrap(null_value.clone());
+  public CraqObject setValue(byte[] value) {
+    this.value = value == null ? (java.nio.ByteBuffer)null : java.nio.ByteBuffer.wrap(value.clone());
     return this;
   }
 
-  public CraqObject setNull_value(java.nio.ByteBuffer null_value) {
-    this.null_value = org.apache.thrift.TBaseHelper.copyBinary(null_value);
+  public CraqObject setValue(java.nio.ByteBuffer value) {
+    this.value = org.apache.thrift.TBaseHelper.copyBinary(value);
     return this;
   }
 
-  public void unsetNull_value() {
-    this.null_value = null;
+  public void unsetValue() {
+    this.value = null;
   }
 
-  /** Returns true if field null_value is set (has been assigned a value) and false otherwise */
-  public boolean isSetNull_value() {
-    return this.null_value != null;
+  /** Returns true if field value is set (has been assigned a value) and false otherwise */
+  public boolean isSetValue() {
+    return this.value != null;
   }
 
-  public void setNull_valueIsSet(boolean value) {
+  public void setValueIsSet(boolean value) {
     if (!value) {
-      this.null_value = null;
+      this.value = null;
     }
-  }
-
-  public int getReturn_value() {
-    return this.return_value;
-  }
-
-  public CraqObject setReturn_value(int return_value) {
-    this.return_value = return_value;
-    setReturn_valueIsSet(true);
-    return this;
-  }
-
-  public void unsetReturn_value() {
-    __isset_bitfield = org.apache.thrift.EncodingUtils.clearBit(__isset_bitfield, __RETURN_VALUE_ISSET_ID);
-  }
-
-  /** Returns true if field return_value is set (has been assigned a value) and false otherwise */
-  public boolean isSetReturn_value() {
-    return org.apache.thrift.EncodingUtils.testBit(__isset_bitfield, __RETURN_VALUE_ISSET_ID);
-  }
-
-  public void setReturn_valueIsSet(boolean value) {
-    __isset_bitfield = org.apache.thrift.EncodingUtils.setBit(__isset_bitfield, __RETURN_VALUE_ISSET_ID, value);
   }
 
   public void setFieldValue(_Fields field, java.lang.Object value) {
     switch (field) {
-    case NULL_VALUE:
+    case VALUE:
       if (value == null) {
-        unsetNull_value();
+        unsetValue();
       } else {
         if (value instanceof byte[]) {
-          setNull_value((byte[])value);
+          setValue((byte[])value);
         } else {
-          setNull_value((java.nio.ByteBuffer)value);
+          setValue((java.nio.ByteBuffer)value);
         }
-      }
-      break;
-
-    case RETURN_VALUE:
-      if (value == null) {
-        unsetReturn_value();
-      } else {
-        setReturn_value((java.lang.Integer)value);
       }
       break;
 
@@ -208,11 +164,8 @@ public class CraqObject implements org.apache.thrift.TBase<CraqObject, CraqObjec
 
   public java.lang.Object getFieldValue(_Fields field) {
     switch (field) {
-    case NULL_VALUE:
-      return getNull_value();
-
-    case RETURN_VALUE:
-      return getReturn_value();
+    case VALUE:
+      return getValue();
 
     }
     throw new java.lang.IllegalStateException();
@@ -225,10 +178,8 @@ public class CraqObject implements org.apache.thrift.TBase<CraqObject, CraqObjec
     }
 
     switch (field) {
-    case NULL_VALUE:
-      return isSetNull_value();
-    case RETURN_VALUE:
-      return isSetReturn_value();
+    case VALUE:
+      return isSetValue();
     }
     throw new java.lang.IllegalStateException();
   }
@@ -248,21 +199,12 @@ public class CraqObject implements org.apache.thrift.TBase<CraqObject, CraqObjec
     if (this == that)
       return true;
 
-    boolean this_present_null_value = true && this.isSetNull_value();
-    boolean that_present_null_value = true && that.isSetNull_value();
-    if (this_present_null_value || that_present_null_value) {
-      if (!(this_present_null_value && that_present_null_value))
+    boolean this_present_value = true && this.isSetValue();
+    boolean that_present_value = true && that.isSetValue();
+    if (this_present_value || that_present_value) {
+      if (!(this_present_value && that_present_value))
         return false;
-      if (!this.null_value.equals(that.null_value))
-        return false;
-    }
-
-    boolean this_present_return_value = true && this.isSetReturn_value();
-    boolean that_present_return_value = true && that.isSetReturn_value();
-    if (this_present_return_value || that_present_return_value) {
-      if (!(this_present_return_value && that_present_return_value))
-        return false;
-      if (this.return_value != that.return_value)
+      if (!this.value.equals(that.value))
         return false;
     }
 
@@ -273,13 +215,9 @@ public class CraqObject implements org.apache.thrift.TBase<CraqObject, CraqObjec
   public int hashCode() {
     int hashCode = 1;
 
-    hashCode = hashCode * 8191 + ((isSetNull_value()) ? 131071 : 524287);
-    if (isSetNull_value())
-      hashCode = hashCode * 8191 + null_value.hashCode();
-
-    hashCode = hashCode * 8191 + ((isSetReturn_value()) ? 131071 : 524287);
-    if (isSetReturn_value())
-      hashCode = hashCode * 8191 + return_value;
+    hashCode = hashCode * 8191 + ((isSetValue()) ? 131071 : 524287);
+    if (isSetValue())
+      hashCode = hashCode * 8191 + value.hashCode();
 
     return hashCode;
   }
@@ -292,22 +230,12 @@ public class CraqObject implements org.apache.thrift.TBase<CraqObject, CraqObjec
 
     int lastComparison = 0;
 
-    lastComparison = java.lang.Boolean.valueOf(isSetNull_value()).compareTo(other.isSetNull_value());
+    lastComparison = java.lang.Boolean.valueOf(isSetValue()).compareTo(other.isSetValue());
     if (lastComparison != 0) {
       return lastComparison;
     }
-    if (isSetNull_value()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.null_value, other.null_value);
-      if (lastComparison != 0) {
-        return lastComparison;
-      }
-    }
-    lastComparison = java.lang.Boolean.valueOf(isSetReturn_value()).compareTo(other.isSetReturn_value());
-    if (lastComparison != 0) {
-      return lastComparison;
-    }
-    if (isSetReturn_value()) {
-      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.return_value, other.return_value);
+    if (isSetValue()) {
+      lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.value, other.value);
       if (lastComparison != 0) {
         return lastComparison;
       }
@@ -332,19 +260,13 @@ public class CraqObject implements org.apache.thrift.TBase<CraqObject, CraqObjec
     java.lang.StringBuilder sb = new java.lang.StringBuilder("CraqObject(");
     boolean first = true;
 
-    if (isSetNull_value()) {
-      sb.append("null_value:");
-      if (this.null_value == null) {
+    if (isSetValue()) {
+      sb.append("value:");
+      if (this.value == null) {
         sb.append("null");
       } else {
-        org.apache.thrift.TBaseHelper.toString(this.null_value, sb);
+        org.apache.thrift.TBaseHelper.toString(this.value, sb);
       }
-      first = false;
-    }
-    if (isSetReturn_value()) {
-      if (!first) sb.append(", ");
-      sb.append("return_value:");
-      sb.append(this.return_value);
       first = false;
     }
     sb.append(")");
@@ -366,8 +288,6 @@ public class CraqObject implements org.apache.thrift.TBase<CraqObject, CraqObjec
 
   private void readObject(java.io.ObjectInputStream in) throws java.io.IOException, java.lang.ClassNotFoundException {
     try {
-      // it doesn't seem like you should have to do this, but java serialization is wacky, and doesn't call the default constructor.
-      __isset_bitfield = 0;
       read(new org.apache.thrift.protocol.TCompactProtocol(new org.apache.thrift.transport.TIOStreamTransport(in)));
     } catch (org.apache.thrift.TException te) {
       throw new java.io.IOException(te);
@@ -392,18 +312,10 @@ public class CraqObject implements org.apache.thrift.TBase<CraqObject, CraqObjec
           break;
         }
         switch (schemeField.id) {
-          case 1: // NULL_VALUE
+          case 1: // VALUE
             if (schemeField.type == org.apache.thrift.protocol.TType.STRING) {
-              struct.null_value = iprot.readBinary();
-              struct.setNull_valueIsSet(true);
-            } else { 
-              org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
-            }
-            break;
-          case 2: // RETURN_VALUE
-            if (schemeField.type == org.apache.thrift.protocol.TType.I32) {
-              struct.return_value = iprot.readI32();
-              struct.setReturn_valueIsSet(true);
+              struct.value = iprot.readBinary();
+              struct.setValueIsSet(true);
             } else { 
               org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
             }
@@ -423,17 +335,12 @@ public class CraqObject implements org.apache.thrift.TBase<CraqObject, CraqObjec
       struct.validate();
 
       oprot.writeStructBegin(STRUCT_DESC);
-      if (struct.null_value != null) {
-        if (struct.isSetNull_value()) {
-          oprot.writeFieldBegin(NULL_VALUE_FIELD_DESC);
-          oprot.writeBinary(struct.null_value);
+      if (struct.value != null) {
+        if (struct.isSetValue()) {
+          oprot.writeFieldBegin(VALUE_FIELD_DESC);
+          oprot.writeBinary(struct.value);
           oprot.writeFieldEnd();
         }
-      }
-      if (struct.isSetReturn_value()) {
-        oprot.writeFieldBegin(RETURN_VALUE_FIELD_DESC);
-        oprot.writeI32(struct.return_value);
-        oprot.writeFieldEnd();
       }
       oprot.writeFieldStop();
       oprot.writeStructEnd();
@@ -453,32 +360,22 @@ public class CraqObject implements org.apache.thrift.TBase<CraqObject, CraqObjec
     public void write(org.apache.thrift.protocol.TProtocol prot, CraqObject struct) throws org.apache.thrift.TException {
       org.apache.thrift.protocol.TTupleProtocol oprot = (org.apache.thrift.protocol.TTupleProtocol) prot;
       java.util.BitSet optionals = new java.util.BitSet();
-      if (struct.isSetNull_value()) {
+      if (struct.isSetValue()) {
         optionals.set(0);
       }
-      if (struct.isSetReturn_value()) {
-        optionals.set(1);
-      }
-      oprot.writeBitSet(optionals, 2);
-      if (struct.isSetNull_value()) {
-        oprot.writeBinary(struct.null_value);
-      }
-      if (struct.isSetReturn_value()) {
-        oprot.writeI32(struct.return_value);
+      oprot.writeBitSet(optionals, 1);
+      if (struct.isSetValue()) {
+        oprot.writeBinary(struct.value);
       }
     }
 
     @Override
     public void read(org.apache.thrift.protocol.TProtocol prot, CraqObject struct) throws org.apache.thrift.TException {
       org.apache.thrift.protocol.TTupleProtocol iprot = (org.apache.thrift.protocol.TTupleProtocol) prot;
-      java.util.BitSet incoming = iprot.readBitSet(2);
+      java.util.BitSet incoming = iprot.readBitSet(1);
       if (incoming.get(0)) {
-        struct.null_value = iprot.readBinary();
-        struct.setNull_valueIsSet(true);
-      }
-      if (incoming.get(1)) {
-        struct.return_value = iprot.readI32();
-        struct.setReturn_valueIsSet(true);
+        struct.value = iprot.readBinary();
+        struct.setValueIsSet(true);
       }
     }
   }

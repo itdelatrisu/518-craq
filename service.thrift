@@ -5,8 +5,7 @@ enum CraqConsistencyModel { STRONG, EVENTUAL }
 
 /** Object envelope. */
 struct CraqObject {
-	1: optional binary null_value;
-	2: optional i32 return_value;
+	1: optional binary value;
 }
 
 /** CRAQ service. */
@@ -27,7 +26,7 @@ service CraqService {
 	// Internal methods
 	// -------------------------------------------------------------------------
 	/** Writes a new value with the given version. */
-	oneway void writeVersioned(1:CraqObject obj, 2:i32 version),
+	/** oneway void writeVersioned(1:CraqObject obj, 2:i32 version), */
 
 	/** Acknowledges that a version number is committed. */
 	/** oneway void ack(1:i32 version), */

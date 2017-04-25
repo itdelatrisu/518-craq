@@ -1,7 +1,8 @@
 package itdelatrisu.craq;
 
+import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.HashMap;
-import java.util.LinkedList;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -31,14 +32,14 @@ public class CraqNode implements CraqService.Iface {
 
 	/** Whether this node is running in CR mode (not CRAQ). */
 	private final boolean crMode;
-	private final boolean head;
-	private final boolean tail;
 	
 	//can be changed?
-	private CraqNode predecessor;
-	private CraqNode successor;
+	private CraqClient tail;
+	private CraqClient predecessor;
+	private CraqClient successor;
 	
-	private LinkedList<Integer> versions;
+	private ArrayList<ByteBuffer> versions; // next dirty value at index 0
+	private ByteBuffer value; // latest clean value
 
 	/** Current known objects: <version, bytes> */
 	//private final Map<Integer, CraqObject> objects = new HashMap<>();
@@ -53,15 +54,15 @@ public class CraqNode implements CraqService.Iface {
 	private int latestVersion = -1;
 
 	/** Creates a new CRAQ node. */
-	public CraqNode(boolean crMode, boolean head, boolean tail, CraqNode predecessor, CraqNode successor) {
+	public CraqNode(boolean crMode, CraqClient tail, CraqClient predecessor, CraqClient successor) {
 		this.crMode = crMode;
-		this.head = head;
 		this.tail = tail;
 		this.predecessor = predecessor;
 		this.successor = successor;
 		
 		//if tail, it has only one element
-		this.versions = new LinkedList<Integer>();
+		this.versions = new ArrayList<ByteBuffer>();
+		this.value = null;
 	}
 
 	/** Starts the server. */
@@ -107,12 +108,12 @@ public class CraqNode implements CraqService.Iface {
 
 	/** Returns whether this node is the head of its chain. */
 	private boolean isHead() { 
-		return this.head; 
+		return (this.predecessor == null); 
 	}
 
 	/** Returns whether this node is the tail of its chain. */
 	private boolean isTail() { 
-		return this.tail; 
+		return (this.successor == null); 
 	}
 
 	@Override
@@ -132,12 +133,15 @@ public class CraqNode implements CraqService.Iface {
 			if (latestVersion > latestCleanVersion) {
 				// latest known version isn't clean
 				// TODO send version query
-				//int tailVersion = tail.versionQuery();
-				//return objects.get(tailVersion);
+				int tailVersion = versionQuery();
+				CraqObject return_obj = new CraqObject();
+				return_obj.setValue(value);
+				return return_obj;
 			} else {
 				// latest known version is clean, return it
 				// TODO I don't konw how to put the return value in
-				CraqObject return_obj = new CraqObject(versions.get(latestVersion));
+				CraqObject return_obj = new CraqObject();
+				return_obj.setValue(versions.get(latestVersion - latestCleanVersion - 1));
 				return return_obj;
 			}
 		}
@@ -145,7 +149,7 @@ public class CraqNode implements CraqService.Iface {
 		// eventual consistency?
 		else if (model == CraqConsistencyModel.EVENTUAL) {
 			// return latest known version				
-			CraqObject return_obj = new CraqObject(versions.get(latestVersion));
+			CraqObject return_obj = new CraqObject();
 			return return_obj;
 		}
 
@@ -162,18 +166,31 @@ public class CraqNode implements CraqService.Iface {
 		// can only write to head
 		if (!isHead())
 			return false;
+		
+		if(isTail()) {
+			// tail only has the latest clean value.
+			value = obj.value;
+			return true;
+		}
 
 		int newVersion;
 		synchronized (this) {
 			// record new object version
 			newVersion = latestVersion + 1;
-			versions.add(obj.return_value);//TODO obj.value?
+			versions.add(obj.value);//TODO obj.value?
 //			objects.put(newVersion, obj);
 			latestVersion++;
 
 			// TODO send down chain
 			// TODO multicast optimization
-			//successor.writeVersioned(obj, newVersion);
+			boolean ack = this.successor.write(obj);
+			if(ack) {
+				latestCleanVersion ++;
+				value = versions.remove(0); //remove the acknowledged version, i.e. oldest version kept in the list
+			}
+			else {
+				// TODO ??
+			}
 		}
 
 		//we decided to use the return value as ack
@@ -194,31 +211,31 @@ public class CraqNode implements CraqService.Iface {
 		return true;
 	}
 
-	@Override
-	public void writeVersioned(CraqObject obj, int version) throws TException {
-		logger.debug("Propagating write with version: {}", version);
-
-		// add new object version
-		versions.add(obj.return_value);
-
-		// update latest version
-		synchronized (this) {
-			if (version > latestVersion)
-				latestVersion = version;
-		}
-
-		if (isTail()) {
-			if (version > latestCleanVersion)
-				latestCleanVersion = version;
-
-			// TODO send acknowledgement up chain
-			// TODO: multicast optimization
-			//predecessor.ack(version);
-		} else {
-			// TODO send down chain
-			//successor.writeVersioned(obj, version);
-		}
-	}
+//	@Override
+//	public void writeVersioned(CraqObject obj, int version) throws TException {
+//		logger.debug("Propagating write with version: {}", version);
+//
+//		// add new object version
+//		versions.add(obj.value);
+//
+//		// update latest version
+//		synchronized (this) {
+//			if (version > latestVersion)
+//				latestVersion = version;
+//		}
+//
+//		if (isTail()) {
+//			if (version > latestCleanVersion)
+//				latestCleanVersion = version;
+//
+//			// TODO send acknowledgement up chain
+//			// TODO: multicast optimization
+//			//predecessor.ack(version);
+//		} else {
+//			// TODO send down chain
+//			//successor.writeVersioned(obj, version);
+//		}
+//	}
 
 //	@Override
 //	public void ack(int version) throws TException {
@@ -259,11 +276,10 @@ public class CraqNode implements CraqService.Iface {
 	public static void main(String[] args) {
 		int port = (args.length < 1) ? 9090 : Integer.parseInt(args[0]);
 		boolean crMode = false;  // TODO command line param?
-		boolean head = false;
-		boolean tail = false;
-		CraqNode predecessor = null;
-		CraqNode successor = null;
-		CraqNode node = new CraqNode(crMode, head, tail, predecessor, successor);
+		CraqClient predecessor = null;
+		CraqClient successor = null;
+		CraqClient tail = null;
+		CraqNode node = new CraqNode(crMode, tail, predecessor, successor);
 		node.start(port);
 	}
 
@@ -273,9 +289,9 @@ public class CraqNode implements CraqService.Iface {
 		return 0;
 	}
 
-	@Override
-	public void ack(int version) throws TException {
-		// TODO Auto-generated method stub
-		
-	}
+//	@Override
+//	public void ack(int version) throws TException {
+//		// TODO Auto-generated method stub
+//		
+//	}
 }
