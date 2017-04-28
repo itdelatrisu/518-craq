@@ -18,11 +18,35 @@ import itdelatrisu.craq.thrift.CraqService;
 /** CRAQ client. */
 public class CraqClient {
 	private static final Logger logger = LoggerFactory.getLogger(CraqClient.class);
+	
+	private static boolean testWrite(CraqService.Client client, String wValue) throws TException {
+		ByteBuffer wBuf = ByteBuffer.wrap(wValue.getBytes(StandardCharsets.UTF_8));
+		CraqObject wObj = new CraqObject();
+		wObj.setValue(wBuf);
+		return client.write(wObj);
+	}
+	
+	private static String testRead(CraqService.Client client, CraqConsistencyModel model) throws TException {
+		CraqObject rObj = client.read(CraqConsistencyModel.STRONG);
+		String rValue = null;
+		if (rObj.isSetValue()) {
+			byte[] rArr = new byte[rObj.value.remaining()];
+			rObj.value.get(rArr);
+			rValue = new String(rArr, StandardCharsets.UTF_8);
+		}
+		return rValue;
+	}
+	
+	private static void testSet1(CraqService.Client client){
+		
+	}
 
 	/** Runs the client. */
 	public static void main(String[] args) throws TException {
 		String host = (args.length < 1) ? "localhost" : args[0];
-		int port = (args.length < 2) ? 10000 : Integer.parseInt(args[1]);
+		int port = (args.length < 2) ? 8080 : Integer.parseInt(args[1]);
+		CraqConsistencyModel strong = CraqConsistencyModel.STRONG;
+		CraqConsistencyModel eventual = CraqConsistencyModel.EVENTUAL;
 
 		// connect to the sever node
 		TTransport transport = new TSocket(host, port);
@@ -33,21 +57,10 @@ public class CraqClient {
 
 		// write something
 		String wValue = "asdfasdf";
-		ByteBuffer wBuf = ByteBuffer.wrap(wValue.getBytes(StandardCharsets.UTF_8));
-		CraqObject wObj = new CraqObject();
-		wObj.setValue(wBuf);
-		boolean written = client.write(wObj);
-		logger.info("Wrote object {}: {}", wValue, written ? "SUCCESS" : "FAIL");
+		logger.info("Wrote object {}: {}", wValue, testWrite(client, wValue) ? "SUCCESS" : "FAIL");
 
 		// read it back
-		CraqObject rObj = client.read(CraqConsistencyModel.STRONG);
-		String rValue = null;
-		if (rObj.isSetValue()) {
-			byte[] rArr = new byte[rObj.value.remaining()];
-			rObj.value.get(rArr);
-			rValue = new String(rArr, StandardCharsets.UTF_8);
-		}
-		logger.info("Read object: {}", rValue);
+		logger.info("Read object: {}", testRead(client, strong));
 
 		transport.close();
 	}
