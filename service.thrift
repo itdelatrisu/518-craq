@@ -19,17 +19,14 @@ service CraqService {
 	/** Writes a new value. */
 	bool write(1:CraqObject obj),
 	
-	/** test-and-set **/
-	i32 test_and_set(1:CraqObject obj),
+	/** Performs a test-and-set operation. **/
+	bool testAndSet(1:CraqObject obj, 2:CraqObject objExpected),
 
 	// -------------------------------------------------------------------------
 	// Internal methods
 	// -------------------------------------------------------------------------
 	/** Writes a new value with the given version. */
-	/** oneway void writeVersioned(1:CraqObject obj, 2:i32 version), */
-
-	/** Acknowledges that a version number is committed. */
-	/** oneway void ack(1:i32 version), */
+	void writeVersioned(1:CraqObject obj, 2:i32 version),
 
 	/** Returns the latest committed version. */
 	i32 versionQuery()
