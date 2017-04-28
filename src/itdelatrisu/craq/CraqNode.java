@@ -1,9 +1,5 @@
 package itdelatrisu.craq;
 
-import itdelatrisu.craq.thrift.CraqConsistencyModel;
-import itdelatrisu.craq.thrift.CraqObject;
-import itdelatrisu.craq.thrift.CraqService;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -23,17 +19,24 @@ import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import itdelatrisu.craq.thrift.CraqConsistencyModel;
+import itdelatrisu.craq.thrift.CraqObject;
+import itdelatrisu.craq.thrift.CraqService;
+
 /** CRAQ server node. */
 public class CraqNode implements CraqService.Iface {
 	private static final Logger logger = LoggerFactory.getLogger(CraqNode.class);
 
+	/** Time to wait before retrying a node connection (in ms). */
+	private static final int CONNECTION_SLEEP_TIME = 200;
+
 	/** Whether this node is running in CR mode (not CRAQ). */
 	private final boolean crMode;
 
-	//can be changed?
-	private CraqService.Client tail;
-	private CraqService.Client successor;
-	
+	/** The client connections. */
+	private CraqService.Client tail, successor;
+
+	/** The entire chain. */
 	private CraqChain chain;
 
 	/** Current known objects: <version, bytes> */
@@ -52,22 +55,26 @@ public class CraqNode implements CraqService.Iface {
 	}
 
 	/** Starts the server. */
-	public void start(int port) {
-		// TODO this is blocking, should be the last thing we call?
+	public void start() {
+		// connect to tail/successor
+		new Thread() {
+			@Override
+			public void run() {
+				try {
+					connectToClients();
+				} catch (InterruptedException e) {
+					logger.error("Failed to connect to Thrift clients.", e);
+				}
+			}
+		}.start();
+
+		// run the server
 		try {
-			// TODO connect to others
-			runServer(port);
+			runServer(chain.getNode().port);
 		} catch (TTransportException e) {
 			logger.error("Failed to start Thrift server.", e);
 			return;
 		}
-
-		// TODO test code
-//		try {
-//			connectToClient("localhost", port);
-//		} catch (TException e) {
-//			logger.error("Failed to connect to Thrift client.", e);
-//		}
 	}
 
 	/** Starts the Thrift server. */
@@ -81,21 +88,56 @@ public class CraqNode implements CraqService.Iface {
 		server.serve();
 	}
 
+	/** Connects to the other nodes in the chain. */
+	private void connectToClients() throws InterruptedException {
+		// connect to tail
+		if (chain.isTail())
+			return;
+		while (true) {
+			try {
+				this.tail = connectToClient(chain.getTail().host, chain.getTail().port);
+				break;
+			} catch (TTransportException e) {
+				Thread.sleep(CONNECTION_SLEEP_TIME);
+			}
+		}
+		logger.info("Connected to tail at {}:{}", chain.getTail().host, chain.getTail().port);
+
+		// connect to successor
+		if (chain.getIndex() == chain.size() - 2) {
+			// is this the node before the tail?
+			this.successor = this.tail;
+			return;
+		}
+		while (true) {
+			try {
+				this.successor = connectToClient(chain.getSuccessor().host, chain.getSuccessor().port);
+				break;
+			} catch (TTransportException e) {
+				Thread.sleep(CONNECTION_SLEEP_TIME);
+			}
+		}
+		logger.info("Connected to successor at {}:{}", chain.getSuccessor().host, chain.getSuccessor().port);
+	}
+
 	/** Connects to the Thrift clients. */
-	private void connectToClient(String host, int port) throws TException {
-		// TODO figure out how to use Zookeeper, this is placeholder code
+	private CraqService.Client connectToClient(String host, int port) throws TTransportException {
 		TTransport transport = new TSocket(host, port);
 		transport.open();
 
 		TProtocol protocol = new TBinaryProtocol(transport);
 		CraqService.Client client = new CraqService.Client(protocol);
 
-		transport.close();
+		return client;
 	}
 
 	@Override
 	public CraqObject read(CraqConsistencyModel model) throws TException {
 		logger.debug("Received read request from client...");
+
+		// node hasn't initialized?
+		if (!chain.isTail() && (tail == null || successor == null))
+			return new CraqObject();
 
 		// no objects stored?
 		if (objects.isEmpty())
@@ -133,6 +175,10 @@ public class CraqNode implements CraqService.Iface {
 	public boolean write(CraqObject obj) throws TException {
 		logger.debug("Received write request from client...");
 
+		// node hasn't initialized?
+		if (tail == null || successor == null)
+			return false;
+
 		// can only write to head
 		if (!chain.isHead())
 			return false;
@@ -161,7 +207,7 @@ public class CraqNode implements CraqService.Iface {
 
 	@Override
 	public void writeVersioned(CraqObject obj, int version) throws TException {
-		logger.debug("Propagating write with version: {}", version);
+		logger.debug("Received write with version: {}", version);
 
 		// add new object version
 		objects.put(version, obj);
@@ -214,17 +260,22 @@ public class CraqNode implements CraqService.Iface {
 
 	/** Starts the CRAQ server node. */
 	public static void main(String[] args) {
-		int port = (args.length < 1) ? 9090 : Integer.parseInt(args[1]);
-		List<CraqChain.ChainNode> chainNodes = new ArrayList<>();
-		boolean crMode = Integer.parseInt(args[0]) == 1;
-		
-		// <isCrMode?> <my port> <my index> [<first ip> <first port> ...]
-		for (int i = 3; i < args.length; i += 2) {
-			chainNodes.add(new CraqChain.ChainNode(args[i], Integer.parseInt(args[i+1])));
+		// parse CLI arguments
+		if (args.length < 4) {
+			System.out.printf("arguments: <is_cr_mode> <node_index> [<first_ip>:<first_port> ... <last_ip>:<last_port>]");
+			System.exit(1);
 		}
-		
-		CraqChain chain = new CraqChain(chainNodes, Integer.parseInt(args[2]));
+		boolean crMode = Integer.parseInt(args[0]) == 1;
+		int nodeIndex = Integer.parseInt(args[1]);
+		List<CraqChain.ChainNode> chainNodes = new ArrayList<>();
+		for (int i = 2; i < args.length; i++) {
+			String[] s = args[i].split(":");
+			chainNodes.add(new CraqChain.ChainNode(s[0], Integer.parseInt(s[1])));
+		}
+		CraqChain chain = new CraqChain(chainNodes, nodeIndex);
+
+		// start the server
 		CraqNode node = new CraqNode(crMode, chain);
-		node.start(port);
+		node.start();
 	}
 }

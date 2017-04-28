@@ -22,7 +22,7 @@ public class CraqClient {
 	/** Runs the client. */
 	public static void main(String[] args) throws TException {
 		String host = (args.length < 1) ? "localhost" : args[0];
-		int port = (args.length < 2) ? 9090 : Integer.parseInt(args[1]);
+		int port = (args.length < 2) ? 10000 : Integer.parseInt(args[1]);
 
 		// connect to the sever node
 		TTransport transport = new TSocket(host, port);
@@ -32,7 +32,7 @@ public class CraqClient {
 		logger.info("Connected to server at {}:{}", host, port);
 
 		// write something
-		String wValue = "test_12345";
+		String wValue = "asdfasdf";
 		ByteBuffer wBuf = ByteBuffer.wrap(wValue.getBytes(StandardCharsets.UTF_8));
 		CraqObject wObj = new CraqObject();
 		wObj.setValue(wBuf);
@@ -40,7 +40,7 @@ public class CraqClient {
 		logger.info("Wrote object {}: {}", wValue, written ? "SUCCESS" : "FAIL");
 
 		// read it back
-		CraqObject rObj = client.read(CraqConsistencyModel.EVENTUAL);
+		CraqObject rObj = client.read(CraqConsistencyModel.STRONG);
 		String rValue = null;
 		if (rObj.isSetValue()) {
 			byte[] rArr = new byte[rObj.value.remaining()];

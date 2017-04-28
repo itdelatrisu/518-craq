@@ -5,7 +5,7 @@ Build with Maven and run the packaged JAR.
 For server nodes:
 ```
 $ mvn clean package
-$ java -jar target/craq.jar {<port>}
+$ java -jar target/craq.jar <is_cr_mode> <node_index> [<first_ip>:<first_port> ... <last_ip>:<last_port>]
 ```
 
 For client nodes:
