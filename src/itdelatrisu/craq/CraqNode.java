@@ -1,6 +1,12 @@
 package itdelatrisu.craq;
 
+import itdelatrisu.craq.thrift.CraqConsistencyModel;
+import itdelatrisu.craq.thrift.CraqObject;
+import itdelatrisu.craq.thrift.CraqService;
+
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -17,10 +23,6 @@ import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import itdelatrisu.craq.thrift.CraqConsistencyModel;
-import itdelatrisu.craq.thrift.CraqObject;
-import itdelatrisu.craq.thrift.CraqService;
-
 /** CRAQ server node. */
 public class CraqNode implements CraqService.Iface {
 	private static final Logger logger = LoggerFactory.getLogger(CraqNode.class);
@@ -30,14 +32,12 @@ public class CraqNode implements CraqService.Iface {
 
 	//can be changed?
 	private CraqService.Client tail;
-	private CraqService.Client predecessor;
 	private CraqService.Client successor;
+	
+	private CraqChain chain;
 
 	/** Current known objects: <version, bytes> */
 	private final Map<Integer, CraqObject> objects = new ConcurrentHashMap<>();
-
-	/** Synchronization aids for unacknowledged versions. */
-	//private final Map<Integer, CountDownLatch> syncMap = new HashMap<>();
 
 	/** The latest known clean object version. */
 	private int latestCleanVersion = -1;
@@ -46,19 +46,16 @@ public class CraqNode implements CraqService.Iface {
 	private int latestVersion = -1;
 
 	/** Creates a new CRAQ node. */
-	public CraqNode(boolean crMode, CraqService.Client tail, CraqService.Client predecessor, CraqService.Client successor) {
+	public CraqNode(boolean crMode, CraqChain chain) {
 		this.crMode = crMode;
-
-		// TODO connect to other nodes
-		this.tail = tail;
-		this.predecessor = predecessor;
-		this.successor = successor;
+		this.chain = chain;
 	}
 
 	/** Starts the server. */
 	public void start(int port) {
 		// TODO this is blocking, should be the last thing we call?
 		try {
+			// TODO connect to others
 			runServer(port);
 		} catch (TTransportException e) {
 			logger.error("Failed to start Thrift server.", e);
@@ -96,16 +93,6 @@ public class CraqNode implements CraqService.Iface {
 		transport.close();
 	}
 
-	/** Returns whether this node is the head of its chain. */
-	private boolean isHead() {
-		return (this.predecessor == null);
-	}
-
-	/** Returns whether this node is the tail of its chain. */
-	private boolean isTail() {
-		return (this.successor == null);
-	}
-
 	@Override
 	public CraqObject read(CraqConsistencyModel model) throws TException {
 		logger.debug("Received read request from client...");
@@ -115,7 +102,7 @@ public class CraqNode implements CraqService.Iface {
 			return new CraqObject();
 
 		// running normal CR: fail if we're not the tail
-		if (crMode && !isTail())
+		if (crMode && !chain.isTail())
 			return new CraqObject();
 
 		// strong consistency?
@@ -147,7 +134,7 @@ public class CraqNode implements CraqService.Iface {
 		logger.debug("Received write request from client...");
 
 		// can only write to head
-		if (!isHead())
+		if (!chain.isHead())
 			return false;
 
 		// record new object version
@@ -185,7 +172,7 @@ public class CraqNode implements CraqService.Iface {
 				latestVersion = version;
 
 			// tail: mark clean
-			if (isTail()) {
+			if (chain.isTail()) {
 				if (version > latestCleanVersion) {
 					latestCleanVersion = version;
 					removeOldVersions(latestCleanVersion);
@@ -194,7 +181,7 @@ public class CraqNode implements CraqService.Iface {
 		}
 
 		// non-tail: send down chain
-		if (!isTail())
+		if (!chain.isTail())
 			successor.writeVersioned(obj, version);
 	}
 
@@ -212,7 +199,7 @@ public class CraqNode implements CraqService.Iface {
 		logger.debug("Received version query...");
 
 		// only tail should receive version queries
-		if (!isTail())
+		if (!chain.isTail())
 			return -1;
 
 		// return latest clean version
@@ -227,12 +214,17 @@ public class CraqNode implements CraqService.Iface {
 
 	/** Starts the CRAQ server node. */
 	public static void main(String[] args) {
-		int port = (args.length < 1) ? 9090 : Integer.parseInt(args[0]);
-		boolean crMode = false;  // TODO command line param?
-		CraqService.Client predecessor = null;
-		CraqService.Client successor = null;
-		CraqService.Client tail = null;
-		CraqNode node = new CraqNode(crMode, tail, predecessor, successor);
+		int port = (args.length < 1) ? 9090 : Integer.parseInt(args[1]);
+		List<CraqChain.ChainNode> chainNodes = new ArrayList<>();
+		boolean crMode = Integer.parseInt(args[0]) == 1;
+		
+		// <isCrMode?> <my port> <my index> [<first ip> <first port> ...]
+		for (int i = 3; i < args.length; i += 2) {
+			chainNodes.add(new CraqChain.ChainNode(args[i], Integer.parseInt(args[i+1])));
+		}
+		
+		CraqChain chain = new CraqChain(chainNodes, Integer.parseInt(args[2]));
+		CraqNode node = new CraqNode(crMode, chain);
 		node.start(port);
 	}
 }
