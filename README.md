@@ -21,7 +21,7 @@ $ thrift --gen java -out src service.thrift
 
 To run servers:
 ```
-$. test.sh
+$. test.sh [<first_ip>:<first_port> ... <last_ip>:<last_port>]
 ```
 To end servers:
 ```
