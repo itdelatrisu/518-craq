@@ -18,3 +18,12 @@ To generate Thrift sources:
 ```
 $ thrift --gen java -out src service.thrift
 ```
+
+To run servers:
+```
+$. test.sh
+```
+To end servers:
+```
+$. closetest.sh
+```
