@@ -26,8 +26,8 @@ public class CraqClient {
 		return client.write(wObj);
 	}
 	
-	private static String testRead(CraqService.Client client, CraqConsistencyModel model) throws TException {
-		CraqObject rObj = client.read(CraqConsistencyModel.STRONG);
+	private static String testRead(CraqService.Client client, CraqConsistencyModel model, int versionBound) throws TException {
+		CraqObject rObj = client.read(CraqConsistencyModel.STRONG, versionBound);
 		String rValue = null;
 		if (rObj.isSetValue()) {
 			byte[] rArr = new byte[rObj.value.remaining()];
@@ -37,16 +37,47 @@ public class CraqClient {
 		return rValue;
 	}
 	
-	private static void testSet1(CraqService.Client client){
-		
+	private static void testStrong(CraqService.Client client, CraqConsistencyModel model) throws TException{
+		// basic write and read 
+		logger.info("Test strong consistency");
+		// write something
+		String wValue = "asdfasdf";
+		logger.info("Wrote object {}: {}", wValue, testWrite(client, wValue) ? "SUCCESS" : "FAIL");
+		// read it back
+		logger.info("Read object: {}: ", testRead(client, model, 0).equals(wValue) ? "SUCCESS" : "FAIL");
+	}
+	
+	private static void testEventual(CraqService.Client client, CraqConsistencyModel model) throws TException{
+		// basic write and read 
+		logger.info("Test eventual consistency");
+		// write something
+		String wValue = "asdfasdf";
+		logger.info("Wrote object {}: {}", wValue, testWrite(client, wValue) ? "SUCCESS" : "FAIL");
+		// read it back
+		logger.info("Read object: {}: ", testRead(client, model, 0).equals("asdf") ? "SUCCESS" : "FAIL");
+	}
+	
+	private static void testEventualBounded(CraqService.Client client, CraqConsistencyModel model) throws TException{
+		// basic write and read 
+		logger.info("Test eventual bounded consistency");
+		// write something
+		String wValue = "asdfasdf";
+		logger.info("Wrote object {}: {}", wValue, testWrite(client, wValue) ? "SUCCESS" : "FAIL");
+		// read it back
+		String read = testRead(client, model, 0);
+		//TODO change test case
+		logger.info("Read object {}: {} ", read, read.equals(wValue) ? "SUCCESS" : "FAIL");
 	}
 
 	/** Runs the client. */
 	public static void main(String[] args) throws TException {
 		String host = (args.length < 1) ? "localhost" : args[0];
 		int port = (args.length < 2) ? 8080 : Integer.parseInt(args[1]);
+		String function = (args.length < 3) ? "readEventualBounded" : args[2];
+		
 		CraqConsistencyModel strong = CraqConsistencyModel.STRONG;
 		CraqConsistencyModel eventual = CraqConsistencyModel.EVENTUAL;
+		CraqConsistencyModel eventual_bounded = CraqConsistencyModel.EVENTUAL_BOUNDED;
 
 		// connect to the sever node
 		TTransport transport = new TSocket(host, port);
@@ -55,12 +86,16 @@ public class CraqClient {
 		CraqService.Client client = new CraqService.Client(protocol);
 		logger.info("Connected to server at {}:{}", host, port);
 
-		// write something
-		String wValue = "asdfasdf";
-		logger.info("Wrote object {}: {}", wValue, testWrite(client, wValue) ? "SUCCESS" : "FAIL");
-
-		// read it back
-		logger.info("Read object: {}", testRead(client, strong));
+		switch (function) {
+			case "write": testWrite(client, "asdf");
+								break;
+			case "readStrong": testStrong(client, strong);
+								break;
+			case "readEventual": testEventual(client, eventual);
+								break;
+			case "readEventualBounded": testEventualBounded(client, eventual_bounded);
+								break;
+		}
 
 		transport.close();
 	}

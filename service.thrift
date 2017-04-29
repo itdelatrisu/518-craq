@@ -1,7 +1,7 @@
 namespace java itdelatrisu.craq.thrift
 
 /** Consistency models. */
-enum CraqConsistencyModel { STRONG, EVENTUAL }
+enum CraqConsistencyModel { STRONG, EVENTUAL, EVENTUAL_BOUNDED }
 
 /** Object envelope. */
 struct CraqObject {
@@ -14,7 +14,7 @@ service CraqService {
 	// Client-facing methods
 	// -------------------------------------------------------------------------
 	/** Reads a value with the desired consistency model. */
-	CraqObject read(1:CraqConsistencyModel model), // and specify which node?
+	CraqObject read(1:CraqConsistencyModel model, 2:i32 versionBound), // and specify which node?
 
 	/** Writes a new value. */
 	bool write(1:CraqObject obj),

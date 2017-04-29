@@ -28,7 +28,7 @@ public class CraqNode implements CraqService.Iface {
 	private static final Logger logger = LoggerFactory.getLogger(CraqNode.class);
 
 	/** Time to wait before retrying a node connection (in ms). */
-	private static final int CONNECTION_SLEEP_TIME = 200;
+	private static final int CONNECTION_SLEEP_TIME = 3000;
 
 	/** Whether this node is running in CR mode (not CRAQ). */
 	private final boolean crMode;
@@ -101,7 +101,8 @@ public class CraqNode implements CraqService.Iface {
 				Thread.sleep(CONNECTION_SLEEP_TIME);
 			}
 		}
-		logger.info("Connected to tail at {}:{}", chain.getTail().host, chain.getTail().port);
+		logger.info("Node {}: Connected to tail at {}:{}", chain.getIndex(), 
+				chain.getTail().host, chain.getTail().port);
 
 		// connect to successor
 		if (chain.getIndex() == chain.size() - 2) {
@@ -117,7 +118,8 @@ public class CraqNode implements CraqService.Iface {
 				Thread.sleep(CONNECTION_SLEEP_TIME);
 			}
 		}
-		logger.info("Connected to successor at {}:{}", chain.getSuccessor().host, chain.getSuccessor().port);
+		logger.info("Node {}: Connected to successor at {}:{}", chain.getIndex(),
+				chain.getSuccessor().host, chain.getSuccessor().port);
 	}
 
 	/** Connects to the Thrift clients. */
@@ -132,8 +134,8 @@ public class CraqNode implements CraqService.Iface {
 	}
 
 	@Override
-	public CraqObject read(CraqConsistencyModel model) throws TException {
-		logger.debug("Received read request from client...");
+	public CraqObject read(CraqConsistencyModel model, int versionBound) throws TException {
+		logger.debug("Node {}: Received read request from client...", chain.getIndex());
 
 		// node hasn't initialized?
 		if (!chain.isTail() && (tail == null || successor == null))
@@ -164,8 +166,22 @@ public class CraqNode implements CraqService.Iface {
 			// return latest known version
 			return objects.get(latestVersion);
 		}
-
-		// TODO bounded eventual consistency?
+		
+		else if (model == CraqConsistencyModel.EVENTUAL_BOUNDED) {
+			if (latestVersion > latestCleanVersion) {
+				// latest known version isn't clean, send a version query
+				int tailVersion = tail.versionQuery();
+				if (latestCleanVersion - tailVersion < versionBound){//here I'm assuming chain is valid
+					return objects.get(latestVersion);
+				}
+				else{
+					return objects.get(tailVersion - versionBound);
+				}
+			} else {
+				// latest known version is clean, return it
+				return objects.get(latestCleanVersion);
+			}
+		}
 
 		logger.error("!! read() shouldn't get here !!");
 		return new CraqObject();
@@ -173,7 +189,7 @@ public class CraqNode implements CraqService.Iface {
 
 	@Override
 	public boolean write(CraqObject obj) throws TException {
-		logger.debug("Received write request from client...");
+		logger.debug("Node {}: Received write request from client...", chain.getIndex());
 
 		// node hasn't initialized?
 		if (tail == null || successor == null)
@@ -207,8 +223,7 @@ public class CraqNode implements CraqService.Iface {
 
 	@Override
 	public void writeVersioned(CraqObject obj, int version) throws TException {
-		logger.debug("Received write with version: {}", version);
-
+		logger.debug("Node {}: Received write with version: {}", chain.getIndex(), version);
 		// add new object version
 		objects.put(version, obj);
 
@@ -242,7 +257,7 @@ public class CraqNode implements CraqService.Iface {
 
 	@Override
 	public int versionQuery() throws TException {
-		logger.debug("Received version query...");
+		logger.debug("Node {}: Received version query...", chain.getIndex());
 
 		// only tail should receive version queries
 		if (!chain.isTail())
@@ -255,7 +270,7 @@ public class CraqNode implements CraqService.Iface {
 	@Override
 	public boolean testAndSet(CraqObject obj, CraqObject objExpected) throws TException {
 		// TODO
-		return true;
+		return false;
 	}
 
 	/** Starts the CRAQ server node. */
