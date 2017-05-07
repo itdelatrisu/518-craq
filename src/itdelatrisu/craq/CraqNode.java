@@ -33,7 +33,7 @@ public class CraqNode implements CraqService.Iface {
 	/** Whether this node is running in CR mode (not CRAQ). */
 	private final boolean crMode;
 
-	/** The client connections. */
+	/** The Thrift client connections. */
 	private CraqService.Client tail, successor;
 
 	/** The entire chain. */
@@ -48,7 +48,7 @@ public class CraqNode implements CraqService.Iface {
 	/** The latest known version (clean or dirty). */
 	private int latestVersion = -1;
 
-	/** Creates a new CRAQ node. */
+	/** Creates a new CRAQ server node. */
 	public CraqNode(boolean crMode, CraqChain chain) {
 		this.crMode = crMode;
 		this.chain = chain;
