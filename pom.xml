@@ -34,6 +34,15 @@
 				<artifactId>maven-shade-plugin</artifactId>
 				<version>2.4.3</version>
 				<configuration>
+					<filters>
+						<filter>
+							<!-- Overwritten classes -->
+							<artifact>org.apache.thrift:libthrift</artifact>
+							<excludes>
+								<exclude>org/apache/thrift/TServiceClient.*</exclude>
+							</excludes>
+						</filter>
+					</filters>
 					<transformers>
 						<transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
 							<manifestEntries>
