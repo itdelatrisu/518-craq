@@ -3,9 +3,17 @@ package itdelatrisu.craq;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.List;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.thrift.TException;
+import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
@@ -51,7 +59,7 @@ public class TestClient {
 	/** Basic read operation (eventual bounded consistency). */
 	public static void readEventualBounded(String host, int port, String[] args) throws TException {
 		if (args.length < 1) {
-			System.err.printf("readEventualBounded() arguments: <versionBound>");
+			System.err.printf("readEventualBounded() arguments: <version_bound>");
 			System.exit(1);
 		}
 		int versionBound = Integer.parseInt(args[0]);
@@ -61,6 +69,63 @@ public class TestClient {
 		String value = client.read(CraqConsistencyModel.EVENTUAL_BOUNDED, versionBound);
 		logger.info("readStrong(): read object {}", value);
 		client.close();
+	}
+
+	/** Benchmarks a read operation. */
+	public static void benchmarkRead(String host, int port, String[] args)
+		throws TTransportException, InterruptedException, ExecutionException {
+		if (args.length < 2) {
+			System.err.printf("benchmarkRead() arguments: <num_clients> <milliseconds> {<other_ip>:<other_port> ...}");
+			System.exit(1);
+		}
+		int numClients = Integer.parseInt(args[0]);
+		int ms = Integer.parseInt(args[1]);
+		int numServers = 1 + args.length - 2;
+		String[] hosts = new String[numServers];
+		hosts[0] = host;
+		int[] ports = new int[numServers];
+		ports[0] = port;
+		for (int i = 0; i < numServers - 1; i++) {
+			String[] s = args[i + 2].split(":");
+			hosts[i + 1] = s[0];
+			ports[i + 1] = Integer.parseInt(s[1]);
+		}
+
+		// connect to clients
+		CraqClient[] clients = new CraqClient[numClients];
+		for (int i = 0; i < numClients; i++) {
+			int serverIndex = i % numServers;
+			clients[i] = new CraqClient(hosts[serverIndex], ports[serverIndex]);
+			clients[i].connect();
+		}
+
+		// begin execution
+		ExecutorService executor = Executors.newFixedThreadPool(numClients);
+		List<Future<Long>> futures = new ArrayList<>(numClients);
+		long startTime = System.nanoTime();
+		for (int i = 0; i < numClients; i++) {
+			CraqClient client = clients[i];
+			futures.add(executor.submit(() -> {
+				long ops = 0;
+				while (!Thread.currentThread().isInterrupted()) {
+					client.read(CraqConsistencyModel.STRONG, 0);
+					ops++;
+				}
+				return ops;
+			}));
+		}
+		executor.awaitTermination(ms, TimeUnit.MILLISECONDS);
+		executor.shutdownNow();
+		long totalTime = System.nanoTime() - startTime;
+
+		// aggregate results
+		long ops = 0;
+		for (Future<Long> future : futures)
+			ops += future.get();
+		long opsPerSecond = Math.round(ops / (totalTime * 1e-9));
+		logger.info("benchmarkRead(): {} ops over {}ns using {} clients ({} ops/sec)", ops, totalTime, numClients, opsPerSecond);
+		for (CraqClient client : clients)
+			client.close();
 	}
 
 	/** Prints the list of invokable methods. */
