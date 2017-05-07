@@ -28,7 +28,7 @@ public class CraqNode implements CraqService.Iface {
 	private static final Logger logger = LoggerFactory.getLogger(CraqNode.class);
 
 	/** Time to wait before retrying a node connection (in ms). */
-	private static final int CONNECTION_SLEEP_TIME = 3000;
+	private static final int CONNECTION_SLEEP_TIME = 1000;
 
 	/** Whether this node is running in CR mode (not CRAQ). */
 	private final boolean crMode;
@@ -78,7 +78,7 @@ public class CraqNode implements CraqService.Iface {
 	}
 
 	/** Starts the Thrift server. */
-	@SuppressWarnings({"rawtypes", "unchecked"})
+	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private void runServer(int port) throws TTransportException {
 		TServerTransport serverTransport = new TServerSocket(port);
 		CraqService.Processor processor = new CraqService.Processor(this);
@@ -101,8 +101,7 @@ public class CraqNode implements CraqService.Iface {
 				Thread.sleep(CONNECTION_SLEEP_TIME);
 			}
 		}
-		logger.info("Node {}: Connected to tail at {}:{}", chain.getIndex(),
-				chain.getTail().host, chain.getTail().port);
+		logger.info("[Node {}] Connected to tail at {}:{}", chain.getIndex(), chain.getTail().host, chain.getTail().port);
 
 		// connect to successor
 		if (chain.getIndex() == chain.size() - 2) {
@@ -118,8 +117,7 @@ public class CraqNode implements CraqService.Iface {
 				Thread.sleep(CONNECTION_SLEEP_TIME);
 			}
 		}
-		logger.info("Node {}: Connected to successor at {}:{}", chain.getIndex(),
-				chain.getSuccessor().host, chain.getSuccessor().port);
+		logger.info("[Node {}] Connected to successor at {}:{}", chain.getIndex(), chain.getSuccessor().host, chain.getSuccessor().port);
 	}
 
 	/** Connects to the Thrift clients. */
@@ -135,7 +133,7 @@ public class CraqNode implements CraqService.Iface {
 
 	@Override
 	public CraqObject read(CraqConsistencyModel model, int versionBound) throws TException {
-		logger.debug("Node {}: Received read request from client...", chain.getIndex());
+		logger.debug("[Node {}] Received read request from client...", chain.getIndex());
 
 		// node hasn't initialized?
 		if (!chain.isTail() && (tail == null || successor == null))
@@ -167,20 +165,11 @@ public class CraqNode implements CraqService.Iface {
 			return objects.get(latestVersion);
 		}
 
+		// bounded eventual consistency?
 		else if (model == CraqConsistencyModel.EVENTUAL_BOUNDED) {
-			if (latestVersion > latestCleanVersion) {
-				// latest known version isn't clean, send a version query
-				int tailVersion = tail.versionQuery();
-				if (latestCleanVersion - tailVersion < versionBound){//here I'm assuming chain is valid
-					return objects.get(latestVersion);
-				}
-				else{
-					return objects.get(tailVersion - versionBound);
-				}
-			} else {
-				// latest known version is clean, return it
-				return objects.get(latestCleanVersion);
-			}
+			// return latest known version within the given bound
+			int boundedVersion = latestCleanVersion + Math.min(versionBound, latestVersion - latestCleanVersion);
+			return objects.get(boundedVersion);
 		}
 
 		logger.error("!! read() shouldn't get here !!");
@@ -189,7 +178,7 @@ public class CraqNode implements CraqService.Iface {
 
 	@Override
 	public boolean write(CraqObject obj) throws TException {
-		logger.debug("Node {}: Received write request from client...", chain.getIndex());
+		logger.debug("[Node {}] Received write request from client...", chain.getIndex());
 
 		// node hasn't initialized?
 		if (tail == null || successor == null)
@@ -223,7 +212,8 @@ public class CraqNode implements CraqService.Iface {
 
 	@Override
 	public void writeVersioned(CraqObject obj, int version) throws TException {
-		logger.debug("Node {}: Received write with version: {}", chain.getIndex(), version);
+		logger.debug("[Node {}] Received write with version: {}", chain.getIndex(), version);
+
 		// add new object version
 		objects.put(version, obj);
 
@@ -257,7 +247,7 @@ public class CraqNode implements CraqService.Iface {
 
 	@Override
 	public int versionQuery() throws TException {
-		logger.debug("Node {}: Received version query...", chain.getIndex());
+		logger.debug("[Node {}] Received version query...", chain.getIndex());
 
 		// only tail should receive version queries
 		if (!chain.isTail())

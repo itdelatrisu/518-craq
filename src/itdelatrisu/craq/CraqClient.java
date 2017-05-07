@@ -19,6 +19,7 @@ import itdelatrisu.craq.thrift.CraqService;
 public class CraqClient {
 	private static final Logger logger = LoggerFactory.getLogger(CraqClient.class);
 
+	/** Writes an object. */
 	private static boolean testWrite(CraqService.Client client, String wValue) throws TException {
 		ByteBuffer wBuf = ByteBuffer.wrap(wValue.getBytes(StandardCharsets.UTF_8));
 		CraqObject wObj = new CraqObject();
@@ -26,6 +27,7 @@ public class CraqClient {
 		return client.write(wObj);
 	}
 
+	/** Reads an object. */
 	private static String testRead(CraqService.Client client, CraqConsistencyModel model, int versionBound) throws TException {
 		CraqObject rObj = client.read(CraqConsistencyModel.STRONG, versionBound);
 		String rValue = null;
@@ -37,7 +39,7 @@ public class CraqClient {
 		return rValue;
 	}
 
-	private static void testStrong(CraqService.Client client, CraqConsistencyModel model) throws TException{
+	private static void testStrong(CraqService.Client client, CraqConsistencyModel model) throws TException {
 		// basic write and read
 		logger.info("Test strong consistency");
 		// write something
@@ -47,7 +49,7 @@ public class CraqClient {
 		logger.info("Read object: {}: ", testRead(client, model, 0).equals(wValue) ? "SUCCESS" : "FAIL");
 	}
 
-	private static void testEventual(CraqService.Client client, CraqConsistencyModel model) throws TException{
+	private static void testEventual(CraqService.Client client, CraqConsistencyModel model) throws TException {
 		// basic write and read
 		logger.info("Test eventual consistency");
 		// write something
@@ -57,7 +59,7 @@ public class CraqClient {
 		logger.info("Read object: {}: ", testRead(client, model, 0).equals("asdf") ? "SUCCESS" : "FAIL");
 	}
 
-	private static void testEventualBounded(CraqService.Client client, CraqConsistencyModel model) throws TException{
+	private static void testEventualBounded(CraqService.Client client, CraqConsistencyModel model) throws TException {
 		// basic write and read
 		logger.info("Test eventual bounded consistency");
 		// write something
@@ -65,7 +67,7 @@ public class CraqClient {
 		logger.info("Wrote object {}: {}", wValue, testWrite(client, wValue) ? "SUCCESS" : "FAIL");
 		// read it back
 		String read = testRead(client, model, 0);
-		//TODO change test case
+		// TODO change test case
 		logger.info("Read object {}: {} ", read, read.equals(wValue) ? "SUCCESS" : "FAIL");
 	}
 
