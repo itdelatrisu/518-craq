@@ -71,9 +71,14 @@ public class CraqClient {
 
 	/** Runs the client. */
 	public static void main(String[] args) throws TException {
-		String host = (args.length < 1) ? "localhost" : args[0];
-		int port = (args.length < 2) ? 8080 : Integer.parseInt(args[1]);
-		String function = (args.length < 3) ? "readEventualBounded" : args[2];
+		String host = "localhost";
+		int port = 8080;
+		if (args.length >= 1) {
+			String[] s = args[0].split(":");
+			host = s[0];
+			port = Integer.parseInt(s[1]);
+		}
+		String function = (args.length < 3) ? "readEventualBounded" : args[1];
 
 		CraqConsistencyModel strong = CraqConsistencyModel.STRONG;
 		CraqConsistencyModel eventual = CraqConsistencyModel.EVENTUAL;

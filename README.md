@@ -16,7 +16,7 @@ $ java -jar target/craq.jar server <is_cr_mode> <node_index> [<first_ip>:<first_
 
 ### Running clients
 ```
-$ java -jar target/craq.jar client <server_host> <server_port> <test_name>
+$ java -jar target/craq.jar client <server_ip>:<server_port> <test_name>
 ```
 
 ### Generating Thrift sources
