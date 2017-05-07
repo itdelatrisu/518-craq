@@ -18,14 +18,14 @@ import itdelatrisu.craq.thrift.CraqService;
 /** CRAQ client. */
 public class CraqClient {
 	private static final Logger logger = LoggerFactory.getLogger(CraqClient.class);
-	
+
 	private static boolean testWrite(CraqService.Client client, String wValue) throws TException {
 		ByteBuffer wBuf = ByteBuffer.wrap(wValue.getBytes(StandardCharsets.UTF_8));
 		CraqObject wObj = new CraqObject();
 		wObj.setValue(wBuf);
 		return client.write(wObj);
 	}
-	
+
 	private static String testRead(CraqService.Client client, CraqConsistencyModel model, int versionBound) throws TException {
 		CraqObject rObj = client.read(CraqConsistencyModel.STRONG, versionBound);
 		String rValue = null;
@@ -36,9 +36,9 @@ public class CraqClient {
 		}
 		return rValue;
 	}
-	
+
 	private static void testStrong(CraqService.Client client, CraqConsistencyModel model) throws TException{
-		// basic write and read 
+		// basic write and read
 		logger.info("Test strong consistency");
 		// write something
 		String wValue = "asdfasdf";
@@ -46,9 +46,9 @@ public class CraqClient {
 		// read it back
 		logger.info("Read object: {}: ", testRead(client, model, 0).equals(wValue) ? "SUCCESS" : "FAIL");
 	}
-	
+
 	private static void testEventual(CraqService.Client client, CraqConsistencyModel model) throws TException{
-		// basic write and read 
+		// basic write and read
 		logger.info("Test eventual consistency");
 		// write something
 		String wValue = "asdfasdf";
@@ -56,9 +56,9 @@ public class CraqClient {
 		// read it back
 		logger.info("Read object: {}: ", testRead(client, model, 0).equals("asdf") ? "SUCCESS" : "FAIL");
 	}
-	
+
 	private static void testEventualBounded(CraqService.Client client, CraqConsistencyModel model) throws TException{
-		// basic write and read 
+		// basic write and read
 		logger.info("Test eventual bounded consistency");
 		// write something
 		String wValue = "asdfasdf";
@@ -74,7 +74,7 @@ public class CraqClient {
 		String host = (args.length < 1) ? "localhost" : args[0];
 		int port = (args.length < 2) ? 8080 : Integer.parseInt(args[1]);
 		String function = (args.length < 3) ? "readEventualBounded" : args[2];
-		
+
 		CraqConsistencyModel strong = CraqConsistencyModel.STRONG;
 		CraqConsistencyModel eventual = CraqConsistencyModel.EVENTUAL;
 		CraqConsistencyModel eventual_bounded = CraqConsistencyModel.EVENTUAL_BOUNDED;
@@ -87,14 +87,18 @@ public class CraqClient {
 		logger.info("Connected to server at {}:{}", host, port);
 
 		switch (function) {
-			case "write": testWrite(client, "asdf");
-								break;
-			case "readStrong": testStrong(client, strong);
-								break;
-			case "readEventual": testEventual(client, eventual);
-								break;
-			case "readEventualBounded": testEventualBounded(client, eventual_bounded);
-								break;
+		case "write":
+			testWrite(client, "asdf");
+			break;
+		case "readStrong":
+			testStrong(client, strong);
+			break;
+		case "readEventual":
+			testEventual(client, eventual);
+			break;
+		case "readEventualBounded":
+			testEventualBounded(client, eventual_bounded);
+			break;
 		}
 
 		transport.close();

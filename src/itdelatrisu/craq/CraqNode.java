@@ -101,7 +101,7 @@ public class CraqNode implements CraqService.Iface {
 				Thread.sleep(CONNECTION_SLEEP_TIME);
 			}
 		}
-		logger.info("Node {}: Connected to tail at {}:{}", chain.getIndex(), 
+		logger.info("Node {}: Connected to tail at {}:{}", chain.getIndex(),
 				chain.getTail().host, chain.getTail().port);
 
 		// connect to successor
@@ -166,7 +166,7 @@ public class CraqNode implements CraqService.Iface {
 			// return latest known version
 			return objects.get(latestVersion);
 		}
-		
+
 		else if (model == CraqConsistencyModel.EVENTUAL_BOUNDED) {
 			if (latestVersion > latestCleanVersion) {
 				// latest known version isn't clean, send a version query
@@ -275,11 +275,6 @@ public class CraqNode implements CraqService.Iface {
 
 	/** Starts the CRAQ server node. */
 	public static void main(String[] args) {
-		// parse CLI arguments
-		if (args.length < 4) {
-			System.out.printf("arguments: <is_cr_mode> <node_index> [<first_ip>:<first_port> ... <last_ip>:<last_port>]");
-			System.exit(1);
-		}
 		boolean crMode = Integer.parseInt(args[0]) == 1;
 		int nodeIndex = Integer.parseInt(args[1]);
 		List<CraqChain.ChainNode> chainNodes = new ArrayList<>();
