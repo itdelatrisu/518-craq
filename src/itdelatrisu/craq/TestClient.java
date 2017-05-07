@@ -26,7 +26,7 @@ public class TestClient {
 	/** Basic write operation. */
 	public static void write(String host, int port, String[] args) throws TException {
 		if (args.length < 1) {
-			System.err.printf("write() arguments: <value>");
+			System.out.printf("write() arguments: <value>");
 			System.exit(1);
 		}
 		String value = args[0];
@@ -59,7 +59,7 @@ public class TestClient {
 	/** Basic read operation (eventual bounded consistency). */
 	public static void readEventualBounded(String host, int port, String[] args) throws TException {
 		if (args.length < 1) {
-			System.err.printf("readEventualBounded() arguments: <version_bound>");
+			System.out.printf("readEventualBounded() arguments: <version_bound>");
 			System.exit(1);
 		}
 		int versionBound = Integer.parseInt(args[0]);
@@ -75,7 +75,7 @@ public class TestClient {
 	public static void benchmarkRead(String host, int port, String[] args)
 		throws TTransportException, InterruptedException, ExecutionException {
 		if (args.length < 2) {
-			System.err.printf("benchmarkRead() arguments: <num_clients> <milliseconds> {<other_ip>:<other_port> ...}");
+			System.out.printf("benchmarkRead() arguments: <num_clients> <milliseconds> {<other_ip>:<other_port> ...}");
 			System.exit(1);
 		}
 		int numClients = Integer.parseInt(args[0]);
