@@ -1,6 +1,7 @@
 # CRAQ
-
-Build with Maven and run the packaged JAR.
+Implementation of the CRAQ system based on the
+[paper from USENIX '09](https://www.usenix.org/legacy/event/usenix09/tech/full_papers/terrace/terrace.pdf)
+by Jeff Terrace and Michael J. Freedman.
 
 ### Building
 Requires Java 8 and Maven.
