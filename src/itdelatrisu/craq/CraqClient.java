@@ -60,7 +60,7 @@ public class CraqClient {
 
 	/** Reads an object. */
 	public String read(CraqConsistencyModel model, int versionBound) throws TException {
-		CraqObject obj = server.read(CraqConsistencyModel.STRONG, versionBound);
+		CraqObject obj = server.read(model, versionBound);
 		String value = null;
 		if (obj.isSetValue()) {
 			byte[] bytes = new byte[obj.value.remaining()];
