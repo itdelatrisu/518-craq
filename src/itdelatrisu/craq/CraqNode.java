@@ -5,12 +5,14 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.server.TServer;
 import org.apache.thrift.server.TThreadPoolServer;
+import org.apache.thrift.transport.TFramedTransport;
 import org.apache.thrift.transport.TServerSocket;
 import org.apache.thrift.transport.TServerTransport;
 import org.apache.thrift.transport.TSocket;
@@ -43,10 +45,10 @@ public class CraqNode implements CraqService.Iface {
 	private final Map<Integer, CraqObject> objects = new ConcurrentHashMap<>();
 
 	/** The latest known clean object version. */
-	private int latestCleanVersion = -1;
+	private AtomicInteger latestCleanVersion = new AtomicInteger(-1);
 
 	/** The latest known version (clean or dirty). */
-	private int latestVersion = -1;
+	private AtomicInteger latestVersion = new AtomicInteger(-1);
 
 	/** Creates a new CRAQ server node. */
 	public CraqNode(boolean crMode, CraqChain chain) {
@@ -75,17 +77,6 @@ public class CraqNode implements CraqService.Iface {
 			logger.error("Failed to start Thrift server.", e);
 			return;
 		}
-	}
-
-	/** Starts the Thrift server. */
-	@SuppressWarnings({ "rawtypes", "unchecked" })
-	private void runServer(int port) throws TTransportException {
-		TServerTransport serverTransport = new TServerSocket(port);
-		CraqService.Processor processor = new CraqService.Processor(this);
-
-		TServer server = new TThreadPoolServer(new TThreadPoolServer.Args(serverTransport).processor(processor));
-		logger.info("Starting Thrift server on port {}...", port);
-		server.serve();
 	}
 
 	/** Connects to the other nodes in the chain. */
@@ -122,13 +113,30 @@ public class CraqNode implements CraqService.Iface {
 
 	/** Connects to the Thrift clients. */
 	private CraqService.Client connectToClient(String host, int port) throws TTransportException {
-		TTransport transport = new TSocket(host, port);
+		TTransport transport = new TFramedTransport(new TSocket(host, port));
 		transport.open();
 
 		TProtocol protocol = new TBinaryProtocol(transport);
 		CraqService.Client client = new CraqService.Client(protocol);
 
 		return client;
+	}
+
+	/** Starts the Thrift server. */
+	@SuppressWarnings({ "rawtypes", "unchecked" })
+	private void runServer(int port) throws TTransportException {
+		TServerTransport serverTransport = new TServerSocket(port);
+		CraqService.Processor processor = new CraqService.Processor(this);
+
+		TServer server = new TThreadPoolServer(
+			new TThreadPoolServer
+				.Args(serverTransport)
+				.processor(processor)
+				.inputTransportFactory(new TFramedTransport.Factory())
+				.outputTransportFactory(new TFramedTransport.Factory())
+		);
+		logger.info("Starting Thrift server on port {}...", port);
+		server.serve();
 	}
 
 	@Override
@@ -149,26 +157,31 @@ public class CraqNode implements CraqService.Iface {
 
 		// strong consistency?
 		if (model == CraqConsistencyModel.STRONG) {
-			if (latestVersion > latestCleanVersion) {
+			if (latestVersion.get() > latestCleanVersion.get()) {
 				// latest known version isn't clean, send a version query
 				int tailVersion = tail.versionQuery();
+				if (tailVersion < 0)
+					return new CraqObject();  // no clean version yet
 				return objects.get(tailVersion);
+			} else if (latestCleanVersion.get() < 0) {
+				// no clean version yet
+				return new CraqObject();
 			} else {
 				// latest known version is clean, return it
-				return objects.get(latestCleanVersion);
+				return objects.get(latestCleanVersion.get());
 			}
 		}
 
 		// eventual consistency?
 		else if (model == CraqConsistencyModel.EVENTUAL) {
 			// return latest known version
-			return objects.get(latestVersion);
+			return objects.get(latestVersion.get());
 		}
 
 		// bounded eventual consistency?
 		else if (model == CraqConsistencyModel.EVENTUAL_BOUNDED) {
 			// return latest known version within the given bound
-			int boundedVersion = latestCleanVersion + Math.min(versionBound, latestVersion - latestCleanVersion);
+			int boundedVersion = latestCleanVersion.get() + Math.min(versionBound, latestVersion.get() - latestCleanVersion.get());
 			return objects.get(boundedVersion);
 		}
 
@@ -189,23 +202,18 @@ public class CraqNode implements CraqService.Iface {
 			return false;
 
 		// record new object version
-		int newVersion;
-		synchronized (this) {
-			newVersion = latestVersion + 1;
-			objects.put(newVersion, obj);
-			latestVersion = newVersion;
-		}
+		int newVersion = latestVersion.incrementAndGet();
+		objects.put(newVersion, obj);
 
 		// send down chain
-		successor.writeVersioned(obj, newVersion);
+		synchronized (successor) {  // TODO
+			successor.writeVersioned(obj, newVersion);
+		}
 
 		// update clean version
-		synchronized (this) {
-			if (newVersion > latestCleanVersion) {
-				latestCleanVersion = newVersion;
-				removeOldVersions(latestCleanVersion);
-			}
-		}
+		int oldCleanVersion = latestCleanVersion.getAndUpdate(x -> x < newVersion ? newVersion : x);
+		if (newVersion > oldCleanVersion)
+			removeOldVersions(latestCleanVersion.get());
 
 		return true;
 	}
@@ -218,26 +226,25 @@ public class CraqNode implements CraqService.Iface {
 		objects.put(version, obj);
 
 		// update latest version
-		synchronized (this) {
-			if (version > latestVersion)
-				latestVersion = version;
+		latestVersion.getAndUpdate(x -> x < version ? version : x);
 
-			// tail: mark clean
-			if (chain.isTail()) {
-				if (version > latestCleanVersion) {
-					latestCleanVersion = version;
-					removeOldVersions(latestCleanVersion);
-				}
-			}
+		// tail: mark clean
+		if (chain.isTail()) {
+			int oldCleanVersion = latestCleanVersion.getAndUpdate(x -> x < version ? version : x);
+			if (version > oldCleanVersion)
+				removeOldVersions(latestCleanVersion.get());
 		}
 
 		// non-tail: send down chain
-		if (!chain.isTail())
-			successor.writeVersioned(obj, version);
+		else {
+			synchronized (successor) {  // TODO
+				successor.writeVersioned(obj, version);
+			}
+		}
 	}
 
 	/** Removes all object versions older than the latest clean one. */
-	private void removeOldVersions(int latestCleanVersion) {
+	private synchronized void removeOldVersions(int latestCleanVersion) {
 		for (Iterator<Map.Entry<Integer, CraqObject>> iter = objects.entrySet().iterator(); iter.hasNext();) {
 			Map.Entry<Integer, CraqObject> entry = iter.next();
 			if (entry.getKey() < latestCleanVersion)
@@ -254,7 +261,7 @@ public class CraqNode implements CraqService.Iface {
 			return -1;
 
 		// return latest clean version
-		return latestCleanVersion;
+		return latestCleanVersion.get();
 	}
 
 	@Override

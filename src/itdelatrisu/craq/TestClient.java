@@ -3,9 +3,12 @@ package itdelatrisu.craq;
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.List;
+import java.util.Random;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -91,7 +94,7 @@ public class TestClient {
 			ports[i + 1] = Integer.parseInt(s[1]);
 		}
 
-		// connect to clients
+		// connect to servers
 		CraqClient[] clients = new CraqClient[numClients];
 		for (int i = 0; i < numClients; i++) {
 			int serverIndex = i % numServers;
@@ -128,14 +131,68 @@ public class TestClient {
 			client.close();
 	}
 
+	/** Benchmarks a write operation. */
+	public static void benchmarkWrite(String host, int port, String[] args)
+		throws TTransportException, InterruptedException, ExecutionException {
+		if (args.length < 3) {
+			System.out.printf("benchmarkWrite() arguments: <num_clients> <size_bytes> <milliseconds>");
+			System.exit(1);
+		}
+		int numClients = Integer.parseInt(args[0]);
+		int numBytes = Integer.parseInt(args[1]);
+		byte[] b = new byte[numBytes];
+		new Random().nextBytes(b);
+		String value = new String(b, StandardCharsets.UTF_8);
+		int ms = Integer.parseInt(args[2]);
+
+		// connect to servers
+		CraqClient[] clients = new CraqClient[numClients];
+		for (int i = 0; i < numClients; i++) {
+			clients[i] = new CraqClient(host, port);
+			clients[i].connect();
+		}
+
+		// begin execution
+		ExecutorService executor = Executors.newFixedThreadPool(numClients);
+		List<Future<Long>> futures = new ArrayList<>(numClients);
+		long startTime = System.nanoTime();
+		for (int i = 0; i < numClients; i++) {
+			CraqClient client = clients[i];
+			futures.add(executor.submit(() -> {
+				long ops = 0;
+				while (!Thread.currentThread().isInterrupted()) {
+					client.write(value);
+					ops++;
+				}
+				return ops;
+			}));
+		}
+		executor.awaitTermination(ms, TimeUnit.MILLISECONDS);
+		executor.shutdownNow();
+		long totalTime = System.nanoTime() - startTime;
+
+		// aggregate results
+		long ops = 0;
+		for (Future<Long> future : futures)
+			ops += future.get();
+		long opsPerSecond = Math.round(ops / (totalTime * 1e-9));
+		logger.info("benchmarkWrite(): {} ops over {}ns using {} clients ({} ops/sec)", ops, totalTime, numClients, opsPerSecond);
+		for (CraqClient client : clients)
+			client.close();
+	}
+
 	/** Prints the list of invokable methods. */
 	private static void printAvailableMethods() {
-		System.out.printf("Available client methods:\n");
+		List<String> methods = new ArrayList<>();
 		for (Method method : TestClient.class.getMethods()) {
 			int modifiers = method.getModifiers();
 			if (Modifier.isPublic(modifiers) && Modifier.isStatic(modifiers) && !method.getName().equals("main"))
-				System.out.printf("    %s\n", method.getName());
+				methods.add(method.getName());
 		}
+		Collections.sort(methods);
+		System.out.printf("Available client methods:\n");
+		for (String name : methods)
+			System.out.printf("    %s\n", name);
 	}
 
 	/** Runs a test. */
