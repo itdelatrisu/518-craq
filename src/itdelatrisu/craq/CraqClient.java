@@ -1,5 +1,9 @@
 package itdelatrisu.craq;
 
+import itdelatrisu.craq.thrift.CraqConsistencyModel;
+import itdelatrisu.craq.thrift.CraqObject;
+import itdelatrisu.craq.thrift.CraqService;
+
 import java.nio.charset.StandardCharsets;
 
 import org.apache.thrift.TException;
@@ -11,10 +15,6 @@ import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import itdelatrisu.craq.thrift.CraqConsistencyModel;
-import itdelatrisu.craq.thrift.CraqObject;
-import itdelatrisu.craq.thrift.CraqService;
 
 /** CRAQ client. */
 public class CraqClient {
@@ -71,7 +71,7 @@ public class CraqClient {
 	}
 
 	/** Writes an object, returning success (true) or failure (false). */
-	public boolean write(String value) throws TException {
+	public long write(String value) throws TException {
 		CraqObject obj = new CraqObject();
 		obj.setValue(value.getBytes(StandardCharsets.UTF_8));
 		return server.write(obj);
@@ -87,9 +87,9 @@ public class CraqClient {
 			obj.isSetDirty() ? obj.isDirty() : null
 		);
 	}
-	
+
 	/** Reads an object, returning null if the read failed for any reason. */
-	public boolean testAndSet(long requestVersion, String value) throws TException {
+	public long testAndSet(long requestVersion, String value) throws TException {
 		CraqObject obj = new CraqObject();
 		obj.setValue(value.getBytes(StandardCharsets.UTF_8));
 		return server.testAndSet(requestVersion, obj);

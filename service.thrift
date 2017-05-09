@@ -21,10 +21,10 @@ service CraqService {
 	CraqObject read(1:CraqConsistencyModel model, 2:Version versionBound),
 
 	/** Writes a new value. */
-	bool write(1:CraqObject obj),
+	Version write(1:CraqObject obj),
 	
 	/** Performs a test-and-set operation. **/
-	bool testAndSet(1:Version requestVersion, 2:CraqObject obj),
+	Version testAndSet(1:Version requestVersion, 2:CraqObject obj),
 
 	// -------------------------------------------------------------------------
 	// Internal methods

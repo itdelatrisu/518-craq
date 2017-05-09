@@ -1,5 +1,8 @@
 package itdelatrisu.craq;
 
+import itdelatrisu.craq.CraqClient.ReadObject;
+import itdelatrisu.craq.thrift.CraqConsistencyModel;
+
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -19,9 +22,6 @@ import org.apache.thrift.TException;
 import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
-
-import itdelatrisu.craq.CraqClient.ReadObject;
-import itdelatrisu.craq.thrift.CraqConsistencyModel;
 
 /** CRAQ client tests. */
 public class TestClient {
@@ -58,8 +58,8 @@ public class TestClient {
 
 		CraqClient client = new CraqClient(host, port);
 		client.connect();
-		boolean status = client.write(value);
-		logger.info("write(): writing object {} ({})", value, status ? "SUCCESS" : "FAIL");
+		long newVersion = client.write(value);
+		logger.info("write(): writing object {} ({})", value, newVersion >= 0 ? newVersion : "FAIL");
 		client.close();
 	}
 
@@ -74,8 +74,8 @@ public class TestClient {
 
 		CraqClient client = new CraqClient(host, port);
 		client.connect();
-		boolean status = client.write(value);
-		logger.info("writeBytes(): writing {}-byte object ({})", numBytes, status ? "SUCCESS" : "FAIL");
+		long newVersion = client.write(value);
+		logger.info("writeBytes(): writing {}-byte object ({})", numBytes, newVersion >= 0 ? newVersion : "FAIL");
 		client.close();
 	}
 
@@ -133,17 +133,17 @@ public class TestClient {
 			System.out.printf("testAndSet() arguments:\n    <requestVersion> <value>\n");
 			System.exit(1);
 		}
-		
+
 		long requestVersion = Long.parseLong(args[0]);
 		String value = args[1];
 
 		CraqClient client = new CraqClient(host, port);
 		client.connect();
-		boolean status = client.testAndSet(requestVersion, value);
-		logger.info("testAndSet(): testing object {} ({})", value, status ? "SUCCESS" : "FAIL");
+		long newVersion = client.testAndSet(requestVersion, value);
+		logger.info("testAndSet(): testing object {} ({})", value, newVersion >= 0 ? newVersion : "FAIL");
 		client.close();
 	}
-	
+
 	/** Benchmarks read operations. */
 	public static void benchmarkRead(String host, int port, String[] args)
 		throws TTransportException, InterruptedException, ExecutionException {
@@ -232,7 +232,7 @@ public class TestClient {
 			futures.add(executor.submit(() -> {
 				long ops = 0;
 				while (!Thread.currentThread().isInterrupted()) {
-					if (client.write(value))
+					if (client.write(value) >= 0)
 						ops++;
 				}
 				return ops;
@@ -298,12 +298,12 @@ public class TestClient {
 		}
 
 		// write initial object
-		boolean status = writers[0].write(value);
+		long newVersion = writers[0].write(value);
 		logger.info(
 			"benchmarkReadWrite(): wrote initial {}-byte object ({})",
-			numBytes, status ? "SUCCESS" : "FAIL"
+			numBytes, newVersion >= 0 ? newVersion : "FAIL"
 		);
-		if (!status)
+		if (newVersion < 0)
 			return;
 
 		// for each write rate...
@@ -321,7 +321,7 @@ public class TestClient {
 				writeFutures.add(executor.submit(() -> {
 					long writes = 0;
 					while (writes < writesNeeded && !Thread.currentThread().isInterrupted()) {
-						if (writer.write(value))
+						if (writer.write(value) >= 0)
 							writes++;
 					}
 					return writes;

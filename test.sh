@@ -1,4 +1,5 @@
 mvn clean package
+
 len=$(($#-1))
 export CHAIN_LEN=$len
 for i in `seq 0 $(($#-1))`

@@ -17,7 +17,7 @@ public class CraqService {
 
     /**
      * Reads a value with the desired consistency model.
-     * 
+     *
      * @param model
      * @param versionBound
      */
@@ -25,22 +25,22 @@ public class CraqService {
 
     /**
      * Writes a new value.
-     * 
+     *
      * @param obj
      */
-    public boolean write(CraqObject obj) throws org.apache.thrift.TException;
+    public long write(CraqObject obj) throws org.apache.thrift.TException;
 
     /**
      * Performs a test-and-set operation. *
-     * 
+     *
      * @param requestVersion
-     * @param objExpected
+     * @param obj
      */
-    public boolean testAndSet(long requestVersion, CraqObject objExpected) throws org.apache.thrift.TException;
+    public long testAndSet(long requestVersion, CraqObject obj) throws org.apache.thrift.TException;
 
     /**
      * Writes a new value with the given version.
-     * 
+     *
      * @param obj
      * @param version
      */
@@ -57,9 +57,9 @@ public class CraqService {
 
     public void read(CraqConsistencyModel model, long versionBound, org.apache.thrift.async.AsyncMethodCallback<CraqObject> resultHandler) throws org.apache.thrift.TException;
 
-    public void write(CraqObject obj, org.apache.thrift.async.AsyncMethodCallback<java.lang.Boolean> resultHandler) throws org.apache.thrift.TException;
+    public void write(CraqObject obj, org.apache.thrift.async.AsyncMethodCallback<java.lang.Long> resultHandler) throws org.apache.thrift.TException;
 
-    public void testAndSet(long requestVersion, CraqObject objExpected, org.apache.thrift.async.AsyncMethodCallback<java.lang.Boolean> resultHandler) throws org.apache.thrift.TException;
+    public void testAndSet(long requestVersion, CraqObject obj, org.apache.thrift.async.AsyncMethodCallback<java.lang.Long> resultHandler) throws org.apache.thrift.TException;
 
     public void writeVersioned(CraqObject obj, long version, org.apache.thrift.async.AsyncMethodCallback<Void> resultHandler) throws org.apache.thrift.TException;
 
@@ -70,10 +70,12 @@ public class CraqService {
   public static class Client extends org.apache.thrift.TServiceClient implements Iface {
     public static class Factory implements org.apache.thrift.TServiceClientFactory<Client> {
       public Factory() {}
-      public Client getClient(org.apache.thrift.protocol.TProtocol prot) {
+      @Override
+	public Client getClient(org.apache.thrift.protocol.TProtocol prot) {
         return new Client(prot);
       }
-      public Client getClient(org.apache.thrift.protocol.TProtocol iprot, org.apache.thrift.protocol.TProtocol oprot) {
+      @Override
+	public Client getClient(org.apache.thrift.protocol.TProtocol iprot, org.apache.thrift.protocol.TProtocol oprot) {
         return new Client(iprot, oprot);
       }
     }
@@ -87,7 +89,8 @@ public class CraqService {
       super(iprot, oprot);
     }
 
-    public CraqObject read(CraqConsistencyModel model, long versionBound) throws org.apache.thrift.TException
+    @Override
+	public CraqObject read(CraqConsistencyModel model, long versionBound) throws org.apache.thrift.TException
     {
       send_read(model, versionBound);
       return recv_read();
@@ -111,7 +114,8 @@ public class CraqService {
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "read failed: unknown result");
     }
 
-    public boolean write(CraqObject obj) throws org.apache.thrift.TException
+    @Override
+	public long write(CraqObject obj) throws org.apache.thrift.TException
     {
       send_write(obj);
       return recv_write();
@@ -124,7 +128,7 @@ public class CraqService {
       sendBase("write", args);
     }
 
-    public boolean recv_write() throws org.apache.thrift.TException
+    public long recv_write() throws org.apache.thrift.TException
     {
       write_result result = new write_result();
       receiveBase(result, "write");
@@ -134,21 +138,22 @@ public class CraqService {
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "write failed: unknown result");
     }
 
-    public boolean testAndSet(long requestVersion, CraqObject objExpected) throws org.apache.thrift.TException
+    @Override
+	public long testAndSet(long requestVersion, CraqObject obj) throws org.apache.thrift.TException
     {
-      send_testAndSet(requestVersion, objExpected);
+      send_testAndSet(requestVersion, obj);
       return recv_testAndSet();
     }
 
-    public void send_testAndSet(long requestVersion, CraqObject objExpected) throws org.apache.thrift.TException
+    public void send_testAndSet(long requestVersion, CraqObject obj) throws org.apache.thrift.TException
     {
       testAndSet_args args = new testAndSet_args();
       args.setRequestVersion(requestVersion);
-      args.setObjExpected(objExpected);
+      args.setObj(obj);
       sendBase("testAndSet", args);
     }
 
-    public boolean recv_testAndSet() throws org.apache.thrift.TException
+    public long recv_testAndSet() throws org.apache.thrift.TException
     {
       testAndSet_result result = new testAndSet_result();
       receiveBase(result, "testAndSet");
@@ -158,7 +163,8 @@ public class CraqService {
       throw new org.apache.thrift.TApplicationException(org.apache.thrift.TApplicationException.MISSING_RESULT, "testAndSet failed: unknown result");
     }
 
-    public void writeVersioned(CraqObject obj, long version) throws org.apache.thrift.TException
+    @Override
+	public void writeVersioned(CraqObject obj, long version) throws org.apache.thrift.TException
     {
       send_writeVersioned(obj, version);
       recv_writeVersioned();
@@ -179,7 +185,8 @@ public class CraqService {
       return;
     }
 
-    public long versionQuery() throws org.apache.thrift.TException
+    @Override
+	public long versionQuery() throws org.apache.thrift.TException
     {
       send_versionQuery();
       return recv_versionQuery();
@@ -210,7 +217,8 @@ public class CraqService {
         this.clientManager = clientManager;
         this.protocolFactory = protocolFactory;
       }
-      public AsyncClient getAsyncClient(org.apache.thrift.transport.TNonblockingTransport transport) {
+      @Override
+	public AsyncClient getAsyncClient(org.apache.thrift.transport.TNonblockingTransport transport) {
         return new AsyncClient(protocolFactory, clientManager, transport);
       }
     }
@@ -219,7 +227,8 @@ public class CraqService {
       super(protocolFactory, clientManager, transport);
     }
 
-    public void read(CraqConsistencyModel model, long versionBound, org.apache.thrift.async.AsyncMethodCallback<CraqObject> resultHandler) throws org.apache.thrift.TException {
+    @Override
+	public void read(CraqConsistencyModel model, long versionBound, org.apache.thrift.async.AsyncMethodCallback<CraqObject> resultHandler) throws org.apache.thrift.TException {
       checkReady();
       read_call method_call = new read_call(model, versionBound, resultHandler, this, ___protocolFactory, ___transport);
       this.___currentMethod = method_call;
@@ -235,7 +244,8 @@ public class CraqService {
         this.versionBound = versionBound;
       }
 
-      public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
+      @Override
+	public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
         prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("read", org.apache.thrift.protocol.TMessageType.CALL, 0));
         read_args args = new read_args();
         args.setModel(model);
@@ -244,7 +254,8 @@ public class CraqService {
         prot.writeMessageEnd();
       }
 
-      public CraqObject getResult() throws org.apache.thrift.TException {
+      @Override
+	public CraqObject getResult() throws org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new java.lang.IllegalStateException("Method call not finished!");
         }
@@ -254,21 +265,23 @@ public class CraqService {
       }
     }
 
-    public void write(CraqObject obj, org.apache.thrift.async.AsyncMethodCallback<java.lang.Boolean> resultHandler) throws org.apache.thrift.TException {
+    @Override
+	public void write(CraqObject obj, org.apache.thrift.async.AsyncMethodCallback<java.lang.Long> resultHandler) throws org.apache.thrift.TException {
       checkReady();
       write_call method_call = new write_call(obj, resultHandler, this, ___protocolFactory, ___transport);
       this.___currentMethod = method_call;
       ___manager.call(method_call);
     }
 
-    public static class write_call extends org.apache.thrift.async.TAsyncMethodCall<java.lang.Boolean> {
+    public static class write_call extends org.apache.thrift.async.TAsyncMethodCall<java.lang.Long> {
       private CraqObject obj;
-      public write_call(CraqObject obj, org.apache.thrift.async.AsyncMethodCallback<java.lang.Boolean> resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+      public write_call(CraqObject obj, org.apache.thrift.async.AsyncMethodCallback<java.lang.Long> resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
         super(client, protocolFactory, transport, resultHandler, false);
         this.obj = obj;
       }
 
-      public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
+      @Override
+	public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
         prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("write", org.apache.thrift.protocol.TMessageType.CALL, 0));
         write_args args = new write_args();
         args.setObj(obj);
@@ -276,7 +289,8 @@ public class CraqService {
         prot.writeMessageEnd();
       }
 
-      public java.lang.Boolean getResult() throws org.apache.thrift.TException {
+      @Override
+	public java.lang.Long getResult() throws org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new java.lang.IllegalStateException("Method call not finished!");
         }
@@ -286,32 +300,35 @@ public class CraqService {
       }
     }
 
-    public void testAndSet(long requestVersion, CraqObject objExpected, org.apache.thrift.async.AsyncMethodCallback<java.lang.Boolean> resultHandler) throws org.apache.thrift.TException {
+    @Override
+	public void testAndSet(long requestVersion, CraqObject obj, org.apache.thrift.async.AsyncMethodCallback<java.lang.Long> resultHandler) throws org.apache.thrift.TException {
       checkReady();
-      testAndSet_call method_call = new testAndSet_call(requestVersion, objExpected, resultHandler, this, ___protocolFactory, ___transport);
+      testAndSet_call method_call = new testAndSet_call(requestVersion, obj, resultHandler, this, ___protocolFactory, ___transport);
       this.___currentMethod = method_call;
       ___manager.call(method_call);
     }
 
-    public static class testAndSet_call extends org.apache.thrift.async.TAsyncMethodCall<java.lang.Boolean> {
+    public static class testAndSet_call extends org.apache.thrift.async.TAsyncMethodCall<java.lang.Long> {
       private long requestVersion;
-      private CraqObject objExpected;
-      public testAndSet_call(long requestVersion, CraqObject objExpected, org.apache.thrift.async.AsyncMethodCallback<java.lang.Boolean> resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
+      private CraqObject obj;
+      public testAndSet_call(long requestVersion, CraqObject obj, org.apache.thrift.async.AsyncMethodCallback<java.lang.Long> resultHandler, org.apache.thrift.async.TAsyncClient client, org.apache.thrift.protocol.TProtocolFactory protocolFactory, org.apache.thrift.transport.TNonblockingTransport transport) throws org.apache.thrift.TException {
         super(client, protocolFactory, transport, resultHandler, false);
         this.requestVersion = requestVersion;
-        this.objExpected = objExpected;
+        this.obj = obj;
       }
 
-      public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
+      @Override
+	public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
         prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("testAndSet", org.apache.thrift.protocol.TMessageType.CALL, 0));
         testAndSet_args args = new testAndSet_args();
         args.setRequestVersion(requestVersion);
-        args.setObjExpected(objExpected);
+        args.setObj(obj);
         args.write(prot);
         prot.writeMessageEnd();
       }
 
-      public java.lang.Boolean getResult() throws org.apache.thrift.TException {
+      @Override
+	public java.lang.Long getResult() throws org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new java.lang.IllegalStateException("Method call not finished!");
         }
@@ -321,7 +338,8 @@ public class CraqService {
       }
     }
 
-    public void writeVersioned(CraqObject obj, long version, org.apache.thrift.async.AsyncMethodCallback<Void> resultHandler) throws org.apache.thrift.TException {
+    @Override
+	public void writeVersioned(CraqObject obj, long version, org.apache.thrift.async.AsyncMethodCallback<Void> resultHandler) throws org.apache.thrift.TException {
       checkReady();
       writeVersioned_call method_call = new writeVersioned_call(obj, version, resultHandler, this, ___protocolFactory, ___transport);
       this.___currentMethod = method_call;
@@ -337,7 +355,8 @@ public class CraqService {
         this.version = version;
       }
 
-      public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
+      @Override
+	public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
         prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("writeVersioned", org.apache.thrift.protocol.TMessageType.CALL, 0));
         writeVersioned_args args = new writeVersioned_args();
         args.setObj(obj);
@@ -346,7 +365,8 @@ public class CraqService {
         prot.writeMessageEnd();
       }
 
-      public Void getResult() throws org.apache.thrift.TException {
+      @Override
+	public Void getResult() throws org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new java.lang.IllegalStateException("Method call not finished!");
         }
@@ -356,7 +376,8 @@ public class CraqService {
       }
     }
 
-    public void versionQuery(org.apache.thrift.async.AsyncMethodCallback<java.lang.Long> resultHandler) throws org.apache.thrift.TException {
+    @Override
+	public void versionQuery(org.apache.thrift.async.AsyncMethodCallback<java.lang.Long> resultHandler) throws org.apache.thrift.TException {
       checkReady();
       versionQuery_call method_call = new versionQuery_call(resultHandler, this, ___protocolFactory, ___transport);
       this.___currentMethod = method_call;
@@ -368,14 +389,16 @@ public class CraqService {
         super(client, protocolFactory, transport, resultHandler, false);
       }
 
-      public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
+      @Override
+	public void write_args(org.apache.thrift.protocol.TProtocol prot) throws org.apache.thrift.TException {
         prot.writeMessageBegin(new org.apache.thrift.protocol.TMessage("versionQuery", org.apache.thrift.protocol.TMessageType.CALL, 0));
         versionQuery_args args = new versionQuery_args();
         args.write(prot);
         prot.writeMessageEnd();
       }
 
-      public java.lang.Long getResult() throws org.apache.thrift.TException {
+      @Override
+	public java.lang.Long getResult() throws org.apache.thrift.TException {
         if (getState() != org.apache.thrift.async.TAsyncMethodCall.State.RESPONSE_READ) {
           throw new java.lang.IllegalStateException("Method call not finished!");
         }
@@ -411,11 +434,13 @@ public class CraqService {
         super("read");
       }
 
-      public read_args getEmptyArgsInstance() {
+      @Override
+	public read_args getEmptyArgsInstance() {
         return new read_args();
       }
 
-      protected boolean isOneway() {
+      @Override
+	protected boolean isOneway() {
         return false;
       }
 
@@ -423,7 +448,8 @@ public class CraqService {
         return false;
       }
 
-      public read_result getResult(I iface, read_args args) throws org.apache.thrift.TException {
+      @Override
+	public read_result getResult(I iface, read_args args) throws org.apache.thrift.TException {
         read_result result = new read_result();
         result.success = iface.read(args.model, args.versionBound);
         return result;
@@ -435,11 +461,13 @@ public class CraqService {
         super("write");
       }
 
-      public write_args getEmptyArgsInstance() {
+      @Override
+	public write_args getEmptyArgsInstance() {
         return new write_args();
       }
 
-      protected boolean isOneway() {
+      @Override
+	protected boolean isOneway() {
         return false;
       }
 
@@ -447,7 +475,8 @@ public class CraqService {
         return false;
       }
 
-      public write_result getResult(I iface, write_args args) throws org.apache.thrift.TException {
+      @Override
+	public write_result getResult(I iface, write_args args) throws org.apache.thrift.TException {
         write_result result = new write_result();
         result.success = iface.write(args.obj);
         result.setSuccessIsSet(true);
@@ -460,11 +489,13 @@ public class CraqService {
         super("testAndSet");
       }
 
-      public testAndSet_args getEmptyArgsInstance() {
+      @Override
+	public testAndSet_args getEmptyArgsInstance() {
         return new testAndSet_args();
       }
 
-      protected boolean isOneway() {
+      @Override
+	protected boolean isOneway() {
         return false;
       }
 
@@ -472,9 +503,10 @@ public class CraqService {
         return false;
       }
 
-      public testAndSet_result getResult(I iface, testAndSet_args args) throws org.apache.thrift.TException {
+      @Override
+	public testAndSet_result getResult(I iface, testAndSet_args args) throws org.apache.thrift.TException {
         testAndSet_result result = new testAndSet_result();
-        result.success = iface.testAndSet(args.requestVersion, args.objExpected);
+        result.success = iface.testAndSet(args.requestVersion, args.obj);
         result.setSuccessIsSet(true);
         return result;
       }
@@ -485,11 +517,13 @@ public class CraqService {
         super("writeVersioned");
       }
 
-      public writeVersioned_args getEmptyArgsInstance() {
+      @Override
+	public writeVersioned_args getEmptyArgsInstance() {
         return new writeVersioned_args();
       }
 
-      protected boolean isOneway() {
+      @Override
+	protected boolean isOneway() {
         return false;
       }
 
@@ -497,7 +531,8 @@ public class CraqService {
         return false;
       }
 
-      public writeVersioned_result getResult(I iface, writeVersioned_args args) throws org.apache.thrift.TException {
+      @Override
+	public writeVersioned_result getResult(I iface, writeVersioned_args args) throws org.apache.thrift.TException {
         writeVersioned_result result = new writeVersioned_result();
         iface.writeVersioned(args.obj, args.version);
         return result;
@@ -509,11 +544,13 @@ public class CraqService {
         super("versionQuery");
       }
 
-      public versionQuery_args getEmptyArgsInstance() {
+      @Override
+	public versionQuery_args getEmptyArgsInstance() {
         return new versionQuery_args();
       }
 
-      protected boolean isOneway() {
+      @Override
+	protected boolean isOneway() {
         return false;
       }
 
@@ -521,7 +558,8 @@ public class CraqService {
         return false;
       }
 
-      public versionQuery_result getResult(I iface, versionQuery_args args) throws org.apache.thrift.TException {
+      @Override
+	public versionQuery_result getResult(I iface, versionQuery_args args) throws org.apache.thrift.TException {
         versionQuery_result result = new versionQuery_result();
         result.success = iface.versionQuery();
         result.setSuccessIsSet(true);
@@ -555,14 +593,17 @@ public class CraqService {
         super("read");
       }
 
-      public read_args getEmptyArgsInstance() {
+      @Override
+	public read_args getEmptyArgsInstance() {
         return new read_args();
       }
 
-      public org.apache.thrift.async.AsyncMethodCallback<CraqObject> getResultHandler(final org.apache.thrift.server.AbstractNonblockingServer.AsyncFrameBuffer fb, final int seqid) {
+      @Override
+	public org.apache.thrift.async.AsyncMethodCallback<CraqObject> getResultHandler(final org.apache.thrift.server.AbstractNonblockingServer.AsyncFrameBuffer fb, final int seqid) {
         final org.apache.thrift.AsyncProcessFunction fcall = this;
-        return new org.apache.thrift.async.AsyncMethodCallback<CraqObject>() { 
-          public void onComplete(CraqObject o) {
+        return new org.apache.thrift.async.AsyncMethodCallback<CraqObject>() {
+          @Override
+		public void onComplete(CraqObject o) {
             read_result result = new read_result();
             result.success = o;
             try {
@@ -575,7 +616,8 @@ public class CraqService {
               onError(e);
             }
           }
-          public void onError(java.lang.Exception e) {
+          @Override
+		public void onError(java.lang.Exception e) {
             byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
             org.apache.thrift.TSerializable msg;
             read_result result = new read_result();
@@ -602,28 +644,33 @@ public class CraqService {
         };
       }
 
-      protected boolean isOneway() {
+      @Override
+	protected boolean isOneway() {
         return false;
       }
 
-      public void start(I iface, read_args args, org.apache.thrift.async.AsyncMethodCallback<CraqObject> resultHandler) throws org.apache.thrift.TException {
+      @Override
+	public void start(I iface, read_args args, org.apache.thrift.async.AsyncMethodCallback<CraqObject> resultHandler) throws org.apache.thrift.TException {
         iface.read(args.model, args.versionBound,resultHandler);
       }
     }
 
-    public static class write<I extends AsyncIface> extends org.apache.thrift.AsyncProcessFunction<I, write_args, java.lang.Boolean> {
+    public static class write<I extends AsyncIface> extends org.apache.thrift.AsyncProcessFunction<I, write_args, java.lang.Long> {
       public write() {
         super("write");
       }
 
-      public write_args getEmptyArgsInstance() {
+      @Override
+	public write_args getEmptyArgsInstance() {
         return new write_args();
       }
 
-      public org.apache.thrift.async.AsyncMethodCallback<java.lang.Boolean> getResultHandler(final org.apache.thrift.server.AbstractNonblockingServer.AsyncFrameBuffer fb, final int seqid) {
+      @Override
+	public org.apache.thrift.async.AsyncMethodCallback<java.lang.Long> getResultHandler(final org.apache.thrift.server.AbstractNonblockingServer.AsyncFrameBuffer fb, final int seqid) {
         final org.apache.thrift.AsyncProcessFunction fcall = this;
-        return new org.apache.thrift.async.AsyncMethodCallback<java.lang.Boolean>() { 
-          public void onComplete(java.lang.Boolean o) {
+        return new org.apache.thrift.async.AsyncMethodCallback<java.lang.Long>() {
+          @Override
+		public void onComplete(java.lang.Long o) {
             write_result result = new write_result();
             result.success = o;
             result.setSuccessIsSet(true);
@@ -637,7 +684,8 @@ public class CraqService {
               onError(e);
             }
           }
-          public void onError(java.lang.Exception e) {
+          @Override
+		public void onError(java.lang.Exception e) {
             byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
             org.apache.thrift.TSerializable msg;
             write_result result = new write_result();
@@ -664,28 +712,33 @@ public class CraqService {
         };
       }
 
-      protected boolean isOneway() {
+      @Override
+	protected boolean isOneway() {
         return false;
       }
 
-      public void start(I iface, write_args args, org.apache.thrift.async.AsyncMethodCallback<java.lang.Boolean> resultHandler) throws org.apache.thrift.TException {
+      @Override
+	public void start(I iface, write_args args, org.apache.thrift.async.AsyncMethodCallback<java.lang.Long> resultHandler) throws org.apache.thrift.TException {
         iface.write(args.obj,resultHandler);
       }
     }
 
-    public static class testAndSet<I extends AsyncIface> extends org.apache.thrift.AsyncProcessFunction<I, testAndSet_args, java.lang.Boolean> {
+    public static class testAndSet<I extends AsyncIface> extends org.apache.thrift.AsyncProcessFunction<I, testAndSet_args, java.lang.Long> {
       public testAndSet() {
         super("testAndSet");
       }
 
-      public testAndSet_args getEmptyArgsInstance() {
+      @Override
+	public testAndSet_args getEmptyArgsInstance() {
         return new testAndSet_args();
       }
 
-      public org.apache.thrift.async.AsyncMethodCallback<java.lang.Boolean> getResultHandler(final org.apache.thrift.server.AbstractNonblockingServer.AsyncFrameBuffer fb, final int seqid) {
+      @Override
+	public org.apache.thrift.async.AsyncMethodCallback<java.lang.Long> getResultHandler(final org.apache.thrift.server.AbstractNonblockingServer.AsyncFrameBuffer fb, final int seqid) {
         final org.apache.thrift.AsyncProcessFunction fcall = this;
-        return new org.apache.thrift.async.AsyncMethodCallback<java.lang.Boolean>() { 
-          public void onComplete(java.lang.Boolean o) {
+        return new org.apache.thrift.async.AsyncMethodCallback<java.lang.Long>() {
+          @Override
+		public void onComplete(java.lang.Long o) {
             testAndSet_result result = new testAndSet_result();
             result.success = o;
             result.setSuccessIsSet(true);
@@ -699,7 +752,8 @@ public class CraqService {
               onError(e);
             }
           }
-          public void onError(java.lang.Exception e) {
+          @Override
+		public void onError(java.lang.Exception e) {
             byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
             org.apache.thrift.TSerializable msg;
             testAndSet_result result = new testAndSet_result();
@@ -726,12 +780,14 @@ public class CraqService {
         };
       }
 
-      protected boolean isOneway() {
+      @Override
+	protected boolean isOneway() {
         return false;
       }
 
-      public void start(I iface, testAndSet_args args, org.apache.thrift.async.AsyncMethodCallback<java.lang.Boolean> resultHandler) throws org.apache.thrift.TException {
-        iface.testAndSet(args.requestVersion, args.objExpected,resultHandler);
+      @Override
+	public void start(I iface, testAndSet_args args, org.apache.thrift.async.AsyncMethodCallback<java.lang.Long> resultHandler) throws org.apache.thrift.TException {
+        iface.testAndSet(args.requestVersion, args.obj,resultHandler);
       }
     }
 
@@ -740,14 +796,17 @@ public class CraqService {
         super("writeVersioned");
       }
 
-      public writeVersioned_args getEmptyArgsInstance() {
+      @Override
+	public writeVersioned_args getEmptyArgsInstance() {
         return new writeVersioned_args();
       }
 
-      public org.apache.thrift.async.AsyncMethodCallback<Void> getResultHandler(final org.apache.thrift.server.AbstractNonblockingServer.AsyncFrameBuffer fb, final int seqid) {
+      @Override
+	public org.apache.thrift.async.AsyncMethodCallback<Void> getResultHandler(final org.apache.thrift.server.AbstractNonblockingServer.AsyncFrameBuffer fb, final int seqid) {
         final org.apache.thrift.AsyncProcessFunction fcall = this;
-        return new org.apache.thrift.async.AsyncMethodCallback<Void>() { 
-          public void onComplete(Void o) {
+        return new org.apache.thrift.async.AsyncMethodCallback<Void>() {
+          @Override
+		public void onComplete(Void o) {
             writeVersioned_result result = new writeVersioned_result();
             try {
               fcall.sendResponse(fb, result, org.apache.thrift.protocol.TMessageType.REPLY,seqid);
@@ -759,7 +818,8 @@ public class CraqService {
               onError(e);
             }
           }
-          public void onError(java.lang.Exception e) {
+          @Override
+		public void onError(java.lang.Exception e) {
             byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
             org.apache.thrift.TSerializable msg;
             writeVersioned_result result = new writeVersioned_result();
@@ -786,11 +846,13 @@ public class CraqService {
         };
       }
 
-      protected boolean isOneway() {
+      @Override
+	protected boolean isOneway() {
         return false;
       }
 
-      public void start(I iface, writeVersioned_args args, org.apache.thrift.async.AsyncMethodCallback<Void> resultHandler) throws org.apache.thrift.TException {
+      @Override
+	public void start(I iface, writeVersioned_args args, org.apache.thrift.async.AsyncMethodCallback<Void> resultHandler) throws org.apache.thrift.TException {
         iface.writeVersioned(args.obj, args.version,resultHandler);
       }
     }
@@ -800,14 +862,17 @@ public class CraqService {
         super("versionQuery");
       }
 
-      public versionQuery_args getEmptyArgsInstance() {
+      @Override
+	public versionQuery_args getEmptyArgsInstance() {
         return new versionQuery_args();
       }
 
-      public org.apache.thrift.async.AsyncMethodCallback<java.lang.Long> getResultHandler(final org.apache.thrift.server.AbstractNonblockingServer.AsyncFrameBuffer fb, final int seqid) {
+      @Override
+	public org.apache.thrift.async.AsyncMethodCallback<java.lang.Long> getResultHandler(final org.apache.thrift.server.AbstractNonblockingServer.AsyncFrameBuffer fb, final int seqid) {
         final org.apache.thrift.AsyncProcessFunction fcall = this;
-        return new org.apache.thrift.async.AsyncMethodCallback<java.lang.Long>() { 
-          public void onComplete(java.lang.Long o) {
+        return new org.apache.thrift.async.AsyncMethodCallback<java.lang.Long>() {
+          @Override
+		public void onComplete(java.lang.Long o) {
             versionQuery_result result = new versionQuery_result();
             result.success = o;
             result.setSuccessIsSet(true);
@@ -821,7 +886,8 @@ public class CraqService {
               onError(e);
             }
           }
-          public void onError(java.lang.Exception e) {
+          @Override
+		public void onError(java.lang.Exception e) {
             byte msgType = org.apache.thrift.protocol.TMessageType.REPLY;
             org.apache.thrift.TSerializable msg;
             versionQuery_result result = new versionQuery_result();
@@ -848,11 +914,13 @@ public class CraqService {
         };
       }
 
-      protected boolean isOneway() {
+      @Override
+	protected boolean isOneway() {
         return false;
       }
 
-      public void start(I iface, versionQuery_args args, org.apache.thrift.async.AsyncMethodCallback<java.lang.Long> resultHandler) throws org.apache.thrift.TException {
+      @Override
+	public void start(I iface, versionQuery_args args, org.apache.thrift.async.AsyncMethodCallback<java.lang.Long> resultHandler) throws org.apache.thrift.TException {
         iface.versionQuery(resultHandler);
       }
     }
@@ -869,7 +937,7 @@ public class CraqService {
     private static final org.apache.thrift.scheme.SchemeFactory TUPLE_SCHEME_FACTORY = new read_argsTupleSchemeFactory();
 
     /**
-     * 
+     *
      * @see CraqConsistencyModel
      */
     public CraqConsistencyModel model; // required
@@ -878,7 +946,7 @@ public class CraqService {
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
       /**
-       * 
+       *
        * @see CraqConsistencyModel
        */
       MODEL((short)1, "model"),
@@ -931,11 +999,13 @@ public class CraqService {
         _fieldName = fieldName;
       }
 
-      public short getThriftFieldId() {
+      @Override
+	public short getThriftFieldId() {
         return _thriftId;
       }
 
-      public java.lang.String getFieldName() {
+      @Override
+	public java.lang.String getFieldName() {
         return _fieldName;
       }
     }
@@ -946,9 +1016,9 @@ public class CraqService {
     public static final java.util.Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
     static {
       java.util.Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new java.util.EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-      tmpMap.put(_Fields.MODEL, new org.apache.thrift.meta_data.FieldMetaData("model", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+      tmpMap.put(_Fields.MODEL, new org.apache.thrift.meta_data.FieldMetaData("model", org.apache.thrift.TFieldRequirementType.DEFAULT,
           new org.apache.thrift.meta_data.EnumMetaData(org.apache.thrift.protocol.TType.ENUM, CraqConsistencyModel.class)));
-      tmpMap.put(_Fields.VERSION_BOUND, new org.apache.thrift.meta_data.FieldMetaData("versionBound", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+      tmpMap.put(_Fields.VERSION_BOUND, new org.apache.thrift.meta_data.FieldMetaData("versionBound", org.apache.thrift.TFieldRequirementType.DEFAULT,
           new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64          , "Version")));
       metaDataMap = java.util.Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(read_args.class, metaDataMap);
@@ -978,7 +1048,8 @@ public class CraqService {
       this.versionBound = other.versionBound;
     }
 
-    public read_args deepCopy() {
+    @Override
+	public read_args deepCopy() {
       return new read_args(this);
     }
 
@@ -990,7 +1061,7 @@ public class CraqService {
     }
 
     /**
-     * 
+     *
      * @see CraqConsistencyModel
      */
     public CraqConsistencyModel getModel() {
@@ -998,7 +1069,7 @@ public class CraqService {
     }
 
     /**
-     * 
+     *
      * @see CraqConsistencyModel
      */
     public read_args setModel(CraqConsistencyModel model) {
@@ -1044,7 +1115,8 @@ public class CraqService {
       __isset_bitfield = org.apache.thrift.EncodingUtils.setBit(__isset_bitfield, __VERSIONBOUND_ISSET_ID, value);
     }
 
-    public void setFieldValue(_Fields field, java.lang.Object value) {
+    @Override
+	public void setFieldValue(_Fields field, java.lang.Object value) {
       switch (field) {
       case MODEL:
         if (value == null) {
@@ -1065,7 +1137,8 @@ public class CraqService {
       }
     }
 
-    public java.lang.Object getFieldValue(_Fields field) {
+    @Override
+	public java.lang.Object getFieldValue(_Fields field) {
       switch (field) {
       case MODEL:
         return getModel();
@@ -1078,7 +1151,8 @@ public class CraqService {
     }
 
     /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
-    public boolean isSet(_Fields field) {
+    @Override
+	public boolean isSet(_Fields field) {
       if (field == null) {
         throw new java.lang.IllegalArgumentException();
       }
@@ -1172,15 +1246,18 @@ public class CraqService {
       return 0;
     }
 
-    public _Fields fieldForId(int fieldId) {
+    @Override
+	public _Fields fieldForId(int fieldId) {
       return _Fields.findByThriftId(fieldId);
     }
 
-    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+    @Override
+	public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
       scheme(iprot).read(iprot, this);
     }
 
-    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+    @Override
+	public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
       scheme(oprot).write(oprot, this);
     }
 
@@ -1228,20 +1305,22 @@ public class CraqService {
     }
 
     private static class read_argsStandardSchemeFactory implements org.apache.thrift.scheme.SchemeFactory {
-      public read_argsStandardScheme getScheme() {
+      @Override
+	public read_argsStandardScheme getScheme() {
         return new read_argsStandardScheme();
       }
     }
 
     private static class read_argsStandardScheme extends org.apache.thrift.scheme.StandardScheme<read_args> {
 
-      public void read(org.apache.thrift.protocol.TProtocol iprot, read_args struct) throws org.apache.thrift.TException {
+      @Override
+	public void read(org.apache.thrift.protocol.TProtocol iprot, read_args struct) throws org.apache.thrift.TException {
         org.apache.thrift.protocol.TField schemeField;
         iprot.readStructBegin();
         while (true)
         {
           schemeField = iprot.readFieldBegin();
-          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) {
             break;
           }
           switch (schemeField.id) {
@@ -1249,7 +1328,7 @@ public class CraqService {
               if (schemeField.type == org.apache.thrift.protocol.TType.I32) {
                 struct.model = itdelatrisu.craq.thrift.CraqConsistencyModel.findByValue(iprot.readI32());
                 struct.setModelIsSet(true);
-              } else { 
+              } else {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
@@ -1257,7 +1336,7 @@ public class CraqService {
               if (schemeField.type == org.apache.thrift.protocol.TType.I64) {
                 struct.versionBound = iprot.readI64();
                 struct.setVersionBoundIsSet(true);
-              } else { 
+              } else {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
@@ -1272,7 +1351,8 @@ public class CraqService {
         struct.validate();
       }
 
-      public void write(org.apache.thrift.protocol.TProtocol oprot, read_args struct) throws org.apache.thrift.TException {
+      @Override
+	public void write(org.apache.thrift.protocol.TProtocol oprot, read_args struct) throws org.apache.thrift.TException {
         struct.validate();
 
         oprot.writeStructBegin(STRUCT_DESC);
@@ -1291,7 +1371,8 @@ public class CraqService {
     }
 
     private static class read_argsTupleSchemeFactory implements org.apache.thrift.scheme.SchemeFactory {
-      public read_argsTupleScheme getScheme() {
+      @Override
+	public read_argsTupleScheme getScheme() {
         return new read_argsTupleScheme();
       }
     }
@@ -1396,11 +1477,13 @@ public class CraqService {
         _fieldName = fieldName;
       }
 
-      public short getThriftFieldId() {
+      @Override
+	public short getThriftFieldId() {
         return _thriftId;
       }
 
-      public java.lang.String getFieldName() {
+      @Override
+	public java.lang.String getFieldName() {
         return _fieldName;
       }
     }
@@ -1409,7 +1492,7 @@ public class CraqService {
     public static final java.util.Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
     static {
       java.util.Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new java.util.EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-      tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+      tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT,
           new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, CraqObject.class)));
       metaDataMap = java.util.Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(read_result.class, metaDataMap);
@@ -1434,7 +1517,8 @@ public class CraqService {
       }
     }
 
-    public read_result deepCopy() {
+    @Override
+	public read_result deepCopy() {
       return new read_result(this);
     }
 
@@ -1467,7 +1551,8 @@ public class CraqService {
       }
     }
 
-    public void setFieldValue(_Fields field, java.lang.Object value) {
+    @Override
+	public void setFieldValue(_Fields field, java.lang.Object value) {
       switch (field) {
       case SUCCESS:
         if (value == null) {
@@ -1480,7 +1565,8 @@ public class CraqService {
       }
     }
 
-    public java.lang.Object getFieldValue(_Fields field) {
+    @Override
+	public java.lang.Object getFieldValue(_Fields field) {
       switch (field) {
       case SUCCESS:
         return getSuccess();
@@ -1490,7 +1576,8 @@ public class CraqService {
     }
 
     /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
-    public boolean isSet(_Fields field) {
+    @Override
+	public boolean isSet(_Fields field) {
       if (field == null) {
         throw new java.lang.IllegalArgumentException();
       }
@@ -1561,15 +1648,18 @@ public class CraqService {
       return 0;
     }
 
-    public _Fields fieldForId(int fieldId) {
+    @Override
+	public _Fields fieldForId(int fieldId) {
       return _Fields.findByThriftId(fieldId);
     }
 
-    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+    @Override
+	public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
       scheme(iprot).read(iprot, this);
     }
 
-    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+    @Override
+	public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
       scheme(oprot).write(oprot, this);
       }
 
@@ -1614,20 +1704,22 @@ public class CraqService {
     }
 
     private static class read_resultStandardSchemeFactory implements org.apache.thrift.scheme.SchemeFactory {
-      public read_resultStandardScheme getScheme() {
+      @Override
+	public read_resultStandardScheme getScheme() {
         return new read_resultStandardScheme();
       }
     }
 
     private static class read_resultStandardScheme extends org.apache.thrift.scheme.StandardScheme<read_result> {
 
-      public void read(org.apache.thrift.protocol.TProtocol iprot, read_result struct) throws org.apache.thrift.TException {
+      @Override
+	public void read(org.apache.thrift.protocol.TProtocol iprot, read_result struct) throws org.apache.thrift.TException {
         org.apache.thrift.protocol.TField schemeField;
         iprot.readStructBegin();
         while (true)
         {
           schemeField = iprot.readFieldBegin();
-          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) {
             break;
           }
           switch (schemeField.id) {
@@ -1636,7 +1728,7 @@ public class CraqService {
                 struct.success = new CraqObject();
                 struct.success.read(iprot);
                 struct.setSuccessIsSet(true);
-              } else { 
+              } else {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
@@ -1651,7 +1743,8 @@ public class CraqService {
         struct.validate();
       }
 
-      public void write(org.apache.thrift.protocol.TProtocol oprot, read_result struct) throws org.apache.thrift.TException {
+      @Override
+	public void write(org.apache.thrift.protocol.TProtocol oprot, read_result struct) throws org.apache.thrift.TException {
         struct.validate();
 
         oprot.writeStructBegin(STRUCT_DESC);
@@ -1667,7 +1760,8 @@ public class CraqService {
     }
 
     private static class read_resultTupleSchemeFactory implements org.apache.thrift.scheme.SchemeFactory {
-      public read_resultTupleScheme getScheme() {
+      @Override
+	public read_resultTupleScheme getScheme() {
         return new read_resultTupleScheme();
       }
     }
@@ -1763,11 +1857,13 @@ public class CraqService {
         _fieldName = fieldName;
       }
 
-      public short getThriftFieldId() {
+      @Override
+	public short getThriftFieldId() {
         return _thriftId;
       }
 
-      public java.lang.String getFieldName() {
+      @Override
+	public java.lang.String getFieldName() {
         return _fieldName;
       }
     }
@@ -1776,7 +1872,7 @@ public class CraqService {
     public static final java.util.Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
     static {
       java.util.Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new java.util.EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-      tmpMap.put(_Fields.OBJ, new org.apache.thrift.meta_data.FieldMetaData("obj", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+      tmpMap.put(_Fields.OBJ, new org.apache.thrift.meta_data.FieldMetaData("obj", org.apache.thrift.TFieldRequirementType.DEFAULT,
           new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, CraqObject.class)));
       metaDataMap = java.util.Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(write_args.class, metaDataMap);
@@ -1801,7 +1897,8 @@ public class CraqService {
       }
     }
 
-    public write_args deepCopy() {
+    @Override
+	public write_args deepCopy() {
       return new write_args(this);
     }
 
@@ -1834,7 +1931,8 @@ public class CraqService {
       }
     }
 
-    public void setFieldValue(_Fields field, java.lang.Object value) {
+    @Override
+	public void setFieldValue(_Fields field, java.lang.Object value) {
       switch (field) {
       case OBJ:
         if (value == null) {
@@ -1847,7 +1945,8 @@ public class CraqService {
       }
     }
 
-    public java.lang.Object getFieldValue(_Fields field) {
+    @Override
+	public java.lang.Object getFieldValue(_Fields field) {
       switch (field) {
       case OBJ:
         return getObj();
@@ -1857,7 +1956,8 @@ public class CraqService {
     }
 
     /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
-    public boolean isSet(_Fields field) {
+    @Override
+	public boolean isSet(_Fields field) {
       if (field == null) {
         throw new java.lang.IllegalArgumentException();
       }
@@ -1928,15 +2028,18 @@ public class CraqService {
       return 0;
     }
 
-    public _Fields fieldForId(int fieldId) {
+    @Override
+	public _Fields fieldForId(int fieldId) {
       return _Fields.findByThriftId(fieldId);
     }
 
-    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+    @Override
+	public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
       scheme(iprot).read(iprot, this);
     }
 
-    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+    @Override
+	public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
       scheme(oprot).write(oprot, this);
     }
 
@@ -1981,20 +2084,22 @@ public class CraqService {
     }
 
     private static class write_argsStandardSchemeFactory implements org.apache.thrift.scheme.SchemeFactory {
-      public write_argsStandardScheme getScheme() {
+      @Override
+	public write_argsStandardScheme getScheme() {
         return new write_argsStandardScheme();
       }
     }
 
     private static class write_argsStandardScheme extends org.apache.thrift.scheme.StandardScheme<write_args> {
 
-      public void read(org.apache.thrift.protocol.TProtocol iprot, write_args struct) throws org.apache.thrift.TException {
+      @Override
+	public void read(org.apache.thrift.protocol.TProtocol iprot, write_args struct) throws org.apache.thrift.TException {
         org.apache.thrift.protocol.TField schemeField;
         iprot.readStructBegin();
         while (true)
         {
           schemeField = iprot.readFieldBegin();
-          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) {
             break;
           }
           switch (schemeField.id) {
@@ -2003,7 +2108,7 @@ public class CraqService {
                 struct.obj = new CraqObject();
                 struct.obj.read(iprot);
                 struct.setObjIsSet(true);
-              } else { 
+              } else {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
@@ -2018,7 +2123,8 @@ public class CraqService {
         struct.validate();
       }
 
-      public void write(org.apache.thrift.protocol.TProtocol oprot, write_args struct) throws org.apache.thrift.TException {
+      @Override
+	public void write(org.apache.thrift.protocol.TProtocol oprot, write_args struct) throws org.apache.thrift.TException {
         struct.validate();
 
         oprot.writeStructBegin(STRUCT_DESC);
@@ -2034,7 +2140,8 @@ public class CraqService {
     }
 
     private static class write_argsTupleSchemeFactory implements org.apache.thrift.scheme.SchemeFactory {
-      public write_argsTupleScheme getScheme() {
+      @Override
+	public write_argsTupleScheme getScheme() {
         return new write_argsTupleScheme();
       }
     }
@@ -2074,12 +2181,12 @@ public class CraqService {
   public static class write_result implements org.apache.thrift.TBase<write_result, write_result._Fields>, java.io.Serializable, Cloneable, Comparable<write_result>   {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("write_result");
 
-    private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.BOOL, (short)0);
+    private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.I64, (short)0);
 
     private static final org.apache.thrift.scheme.SchemeFactory STANDARD_SCHEME_FACTORY = new write_resultStandardSchemeFactory();
     private static final org.apache.thrift.scheme.SchemeFactory TUPLE_SCHEME_FACTORY = new write_resultTupleSchemeFactory();
 
-    public boolean success; // required
+    public long success; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -2130,11 +2237,13 @@ public class CraqService {
         _fieldName = fieldName;
       }
 
-      public short getThriftFieldId() {
+      @Override
+	public short getThriftFieldId() {
         return _thriftId;
       }
 
-      public java.lang.String getFieldName() {
+      @Override
+	public java.lang.String getFieldName() {
         return _fieldName;
       }
     }
@@ -2145,8 +2254,8 @@ public class CraqService {
     public static final java.util.Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
     static {
       java.util.Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new java.util.EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-      tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.BOOL)));
+      tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT,
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64          , "Version")));
       metaDataMap = java.util.Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(write_result.class, metaDataMap);
     }
@@ -2155,7 +2264,7 @@ public class CraqService {
     }
 
     public write_result(
-      boolean success)
+      long success)
     {
       this();
       this.success = success;
@@ -2170,21 +2279,22 @@ public class CraqService {
       this.success = other.success;
     }
 
-    public write_result deepCopy() {
+    @Override
+	public write_result deepCopy() {
       return new write_result(this);
     }
 
     @Override
     public void clear() {
       setSuccessIsSet(false);
-      this.success = false;
+      this.success = 0;
     }
 
-    public boolean isSuccess() {
+    public long getSuccess() {
       return this.success;
     }
 
-    public write_result setSuccess(boolean success) {
+    public write_result setSuccess(long success) {
       this.success = success;
       setSuccessIsSet(true);
       return this;
@@ -2203,30 +2313,33 @@ public class CraqService {
       __isset_bitfield = org.apache.thrift.EncodingUtils.setBit(__isset_bitfield, __SUCCESS_ISSET_ID, value);
     }
 
-    public void setFieldValue(_Fields field, java.lang.Object value) {
+    @Override
+	public void setFieldValue(_Fields field, java.lang.Object value) {
       switch (field) {
       case SUCCESS:
         if (value == null) {
           unsetSuccess();
         } else {
-          setSuccess((java.lang.Boolean)value);
+          setSuccess((java.lang.Long)value);
         }
         break;
 
       }
     }
 
-    public java.lang.Object getFieldValue(_Fields field) {
+    @Override
+	public java.lang.Object getFieldValue(_Fields field) {
       switch (field) {
       case SUCCESS:
-        return isSuccess();
+        return getSuccess();
 
       }
       throw new java.lang.IllegalStateException();
     }
 
     /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
-    public boolean isSet(_Fields field) {
+    @Override
+	public boolean isSet(_Fields field) {
       if (field == null) {
         throw new java.lang.IllegalArgumentException();
       }
@@ -2269,7 +2382,7 @@ public class CraqService {
     public int hashCode() {
       int hashCode = 1;
 
-      hashCode = hashCode * 8191 + ((success) ? 131071 : 524287);
+      hashCode = hashCode * 8191 + org.apache.thrift.TBaseHelper.hashCode(success);
 
       return hashCode;
     }
@@ -2295,15 +2408,18 @@ public class CraqService {
       return 0;
     }
 
-    public _Fields fieldForId(int fieldId) {
+    @Override
+	public _Fields fieldForId(int fieldId) {
       return _Fields.findByThriftId(fieldId);
     }
 
-    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+    @Override
+	public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
       scheme(iprot).read(iprot, this);
     }
 
-    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+    @Override
+	public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
       scheme(oprot).write(oprot, this);
       }
 
@@ -2343,28 +2459,30 @@ public class CraqService {
     }
 
     private static class write_resultStandardSchemeFactory implements org.apache.thrift.scheme.SchemeFactory {
-      public write_resultStandardScheme getScheme() {
+      @Override
+	public write_resultStandardScheme getScheme() {
         return new write_resultStandardScheme();
       }
     }
 
     private static class write_resultStandardScheme extends org.apache.thrift.scheme.StandardScheme<write_result> {
 
-      public void read(org.apache.thrift.protocol.TProtocol iprot, write_result struct) throws org.apache.thrift.TException {
+      @Override
+	public void read(org.apache.thrift.protocol.TProtocol iprot, write_result struct) throws org.apache.thrift.TException {
         org.apache.thrift.protocol.TField schemeField;
         iprot.readStructBegin();
         while (true)
         {
           schemeField = iprot.readFieldBegin();
-          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) {
             break;
           }
           switch (schemeField.id) {
             case 0: // SUCCESS
-              if (schemeField.type == org.apache.thrift.protocol.TType.BOOL) {
-                struct.success = iprot.readBool();
+              if (schemeField.type == org.apache.thrift.protocol.TType.I64) {
+                struct.success = iprot.readI64();
                 struct.setSuccessIsSet(true);
-              } else { 
+              } else {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
@@ -2379,13 +2497,14 @@ public class CraqService {
         struct.validate();
       }
 
-      public void write(org.apache.thrift.protocol.TProtocol oprot, write_result struct) throws org.apache.thrift.TException {
+      @Override
+	public void write(org.apache.thrift.protocol.TProtocol oprot, write_result struct) throws org.apache.thrift.TException {
         struct.validate();
 
         oprot.writeStructBegin(STRUCT_DESC);
         if (struct.isSetSuccess()) {
           oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
-          oprot.writeBool(struct.success);
+          oprot.writeI64(struct.success);
           oprot.writeFieldEnd();
         }
         oprot.writeFieldStop();
@@ -2395,7 +2514,8 @@ public class CraqService {
     }
 
     private static class write_resultTupleSchemeFactory implements org.apache.thrift.scheme.SchemeFactory {
-      public write_resultTupleScheme getScheme() {
+      @Override
+	public write_resultTupleScheme getScheme() {
         return new write_resultTupleScheme();
       }
     }
@@ -2411,7 +2531,7 @@ public class CraqService {
         }
         oprot.writeBitSet(optionals, 1);
         if (struct.isSetSuccess()) {
-          oprot.writeBool(struct.success);
+          oprot.writeI64(struct.success);
         }
       }
 
@@ -2420,7 +2540,7 @@ public class CraqService {
         org.apache.thrift.protocol.TTupleProtocol iprot = (org.apache.thrift.protocol.TTupleProtocol) prot;
         java.util.BitSet incoming = iprot.readBitSet(1);
         if (incoming.get(0)) {
-          struct.success = iprot.readBool();
+          struct.success = iprot.readI64();
           struct.setSuccessIsSet(true);
         }
       }
@@ -2435,18 +2555,18 @@ public class CraqService {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("testAndSet_args");
 
     private static final org.apache.thrift.protocol.TField REQUEST_VERSION_FIELD_DESC = new org.apache.thrift.protocol.TField("requestVersion", org.apache.thrift.protocol.TType.I64, (short)1);
-    private static final org.apache.thrift.protocol.TField OBJ_EXPECTED_FIELD_DESC = new org.apache.thrift.protocol.TField("objExpected", org.apache.thrift.protocol.TType.STRUCT, (short)2);
+    private static final org.apache.thrift.protocol.TField OBJ_FIELD_DESC = new org.apache.thrift.protocol.TField("obj", org.apache.thrift.protocol.TType.STRUCT, (short)2);
 
     private static final org.apache.thrift.scheme.SchemeFactory STANDARD_SCHEME_FACTORY = new testAndSet_argsStandardSchemeFactory();
     private static final org.apache.thrift.scheme.SchemeFactory TUPLE_SCHEME_FACTORY = new testAndSet_argsTupleSchemeFactory();
 
     public long requestVersion; // required
-    public CraqObject objExpected; // required
+    public CraqObject obj; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
       REQUEST_VERSION((short)1, "requestVersion"),
-      OBJ_EXPECTED((short)2, "objExpected");
+      OBJ((short)2, "obj");
 
       private static final java.util.Map<java.lang.String, _Fields> byName = new java.util.HashMap<java.lang.String, _Fields>();
 
@@ -2463,8 +2583,8 @@ public class CraqService {
         switch(fieldId) {
           case 1: // REQUEST_VERSION
             return REQUEST_VERSION;
-          case 2: // OBJ_EXPECTED
-            return OBJ_EXPECTED;
+          case 2: // OBJ
+            return OBJ;
           default:
             return null;
         }
@@ -2495,11 +2615,13 @@ public class CraqService {
         _fieldName = fieldName;
       }
 
-      public short getThriftFieldId() {
+      @Override
+	public short getThriftFieldId() {
         return _thriftId;
       }
 
-      public java.lang.String getFieldName() {
+      @Override
+	public java.lang.String getFieldName() {
         return _fieldName;
       }
     }
@@ -2510,9 +2632,9 @@ public class CraqService {
     public static final java.util.Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
     static {
       java.util.Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new java.util.EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-      tmpMap.put(_Fields.REQUEST_VERSION, new org.apache.thrift.meta_data.FieldMetaData("requestVersion", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+      tmpMap.put(_Fields.REQUEST_VERSION, new org.apache.thrift.meta_data.FieldMetaData("requestVersion", org.apache.thrift.TFieldRequirementType.DEFAULT,
           new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64          , "Version")));
-      tmpMap.put(_Fields.OBJ_EXPECTED, new org.apache.thrift.meta_data.FieldMetaData("objExpected", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+      tmpMap.put(_Fields.OBJ, new org.apache.thrift.meta_data.FieldMetaData("obj", org.apache.thrift.TFieldRequirementType.DEFAULT,
           new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, CraqObject.class)));
       metaDataMap = java.util.Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(testAndSet_args.class, metaDataMap);
@@ -2523,12 +2645,12 @@ public class CraqService {
 
     public testAndSet_args(
       long requestVersion,
-      CraqObject objExpected)
+      CraqObject obj)
     {
       this();
       this.requestVersion = requestVersion;
       setRequestVersionIsSet(true);
-      this.objExpected = objExpected;
+      this.obj = obj;
     }
 
     /**
@@ -2537,12 +2659,13 @@ public class CraqService {
     public testAndSet_args(testAndSet_args other) {
       __isset_bitfield = other.__isset_bitfield;
       this.requestVersion = other.requestVersion;
-      if (other.isSetObjExpected()) {
-        this.objExpected = new CraqObject(other.objExpected);
+      if (other.isSetObj()) {
+        this.obj = new CraqObject(other.obj);
       }
     }
 
-    public testAndSet_args deepCopy() {
+    @Override
+	public testAndSet_args deepCopy() {
       return new testAndSet_args(this);
     }
 
@@ -2550,7 +2673,7 @@ public class CraqService {
     public void clear() {
       setRequestVersionIsSet(false);
       this.requestVersion = 0;
-      this.objExpected = null;
+      this.obj = null;
     }
 
     public long getRequestVersion() {
@@ -2576,31 +2699,32 @@ public class CraqService {
       __isset_bitfield = org.apache.thrift.EncodingUtils.setBit(__isset_bitfield, __REQUESTVERSION_ISSET_ID, value);
     }
 
-    public CraqObject getObjExpected() {
-      return this.objExpected;
+    public CraqObject getObj() {
+      return this.obj;
     }
 
-    public testAndSet_args setObjExpected(CraqObject objExpected) {
-      this.objExpected = objExpected;
+    public testAndSet_args setObj(CraqObject obj) {
+      this.obj = obj;
       return this;
     }
 
-    public void unsetObjExpected() {
-      this.objExpected = null;
+    public void unsetObj() {
+      this.obj = null;
     }
 
-    /** Returns true if field objExpected is set (has been assigned a value) and false otherwise */
-    public boolean isSetObjExpected() {
-      return this.objExpected != null;
+    /** Returns true if field obj is set (has been assigned a value) and false otherwise */
+    public boolean isSetObj() {
+      return this.obj != null;
     }
 
-    public void setObjExpectedIsSet(boolean value) {
+    public void setObjIsSet(boolean value) {
       if (!value) {
-        this.objExpected = null;
+        this.obj = null;
       }
     }
 
-    public void setFieldValue(_Fields field, java.lang.Object value) {
+    @Override
+	public void setFieldValue(_Fields field, java.lang.Object value) {
       switch (field) {
       case REQUEST_VERSION:
         if (value == null) {
@@ -2610,31 +2734,33 @@ public class CraqService {
         }
         break;
 
-      case OBJ_EXPECTED:
+      case OBJ:
         if (value == null) {
-          unsetObjExpected();
+          unsetObj();
         } else {
-          setObjExpected((CraqObject)value);
+          setObj((CraqObject)value);
         }
         break;
 
       }
     }
 
-    public java.lang.Object getFieldValue(_Fields field) {
+    @Override
+	public java.lang.Object getFieldValue(_Fields field) {
       switch (field) {
       case REQUEST_VERSION:
         return getRequestVersion();
 
-      case OBJ_EXPECTED:
-        return getObjExpected();
+      case OBJ:
+        return getObj();
 
       }
       throw new java.lang.IllegalStateException();
     }
 
     /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
-    public boolean isSet(_Fields field) {
+    @Override
+	public boolean isSet(_Fields field) {
       if (field == null) {
         throw new java.lang.IllegalArgumentException();
       }
@@ -2642,8 +2768,8 @@ public class CraqService {
       switch (field) {
       case REQUEST_VERSION:
         return isSetRequestVersion();
-      case OBJ_EXPECTED:
-        return isSetObjExpected();
+      case OBJ:
+        return isSetObj();
       }
       throw new java.lang.IllegalStateException();
     }
@@ -2672,12 +2798,12 @@ public class CraqService {
           return false;
       }
 
-      boolean this_present_objExpected = true && this.isSetObjExpected();
-      boolean that_present_objExpected = true && that.isSetObjExpected();
-      if (this_present_objExpected || that_present_objExpected) {
-        if (!(this_present_objExpected && that_present_objExpected))
+      boolean this_present_obj = true && this.isSetObj();
+      boolean that_present_obj = true && that.isSetObj();
+      if (this_present_obj || that_present_obj) {
+        if (!(this_present_obj && that_present_obj))
           return false;
-        if (!this.objExpected.equals(that.objExpected))
+        if (!this.obj.equals(that.obj))
           return false;
       }
 
@@ -2690,9 +2816,9 @@ public class CraqService {
 
       hashCode = hashCode * 8191 + org.apache.thrift.TBaseHelper.hashCode(requestVersion);
 
-      hashCode = hashCode * 8191 + ((isSetObjExpected()) ? 131071 : 524287);
-      if (isSetObjExpected())
-        hashCode = hashCode * 8191 + objExpected.hashCode();
+      hashCode = hashCode * 8191 + ((isSetObj()) ? 131071 : 524287);
+      if (isSetObj())
+        hashCode = hashCode * 8191 + obj.hashCode();
 
       return hashCode;
     }
@@ -2715,12 +2841,12 @@ public class CraqService {
           return lastComparison;
         }
       }
-      lastComparison = java.lang.Boolean.valueOf(isSetObjExpected()).compareTo(other.isSetObjExpected());
+      lastComparison = java.lang.Boolean.valueOf(isSetObj()).compareTo(other.isSetObj());
       if (lastComparison != 0) {
         return lastComparison;
       }
-      if (isSetObjExpected()) {
-        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.objExpected, other.objExpected);
+      if (isSetObj()) {
+        lastComparison = org.apache.thrift.TBaseHelper.compareTo(this.obj, other.obj);
         if (lastComparison != 0) {
           return lastComparison;
         }
@@ -2728,15 +2854,18 @@ public class CraqService {
       return 0;
     }
 
-    public _Fields fieldForId(int fieldId) {
+    @Override
+	public _Fields fieldForId(int fieldId) {
       return _Fields.findByThriftId(fieldId);
     }
 
-    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+    @Override
+	public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
       scheme(iprot).read(iprot, this);
     }
 
-    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+    @Override
+	public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
       scheme(oprot).write(oprot, this);
     }
 
@@ -2749,11 +2878,11 @@ public class CraqService {
       sb.append(this.requestVersion);
       first = false;
       if (!first) sb.append(", ");
-      sb.append("objExpected:");
-      if (this.objExpected == null) {
+      sb.append("obj:");
+      if (this.obj == null) {
         sb.append("null");
       } else {
-        sb.append(this.objExpected);
+        sb.append(this.obj);
       }
       first = false;
       sb.append(")");
@@ -2763,8 +2892,8 @@ public class CraqService {
     public void validate() throws org.apache.thrift.TException {
       // check for required fields
       // check for sub-struct validity
-      if (objExpected != null) {
-        objExpected.validate();
+      if (obj != null) {
+        obj.validate();
       }
     }
 
@@ -2787,20 +2916,22 @@ public class CraqService {
     }
 
     private static class testAndSet_argsStandardSchemeFactory implements org.apache.thrift.scheme.SchemeFactory {
-      public testAndSet_argsStandardScheme getScheme() {
+      @Override
+	public testAndSet_argsStandardScheme getScheme() {
         return new testAndSet_argsStandardScheme();
       }
     }
 
     private static class testAndSet_argsStandardScheme extends org.apache.thrift.scheme.StandardScheme<testAndSet_args> {
 
-      public void read(org.apache.thrift.protocol.TProtocol iprot, testAndSet_args struct) throws org.apache.thrift.TException {
+      @Override
+	public void read(org.apache.thrift.protocol.TProtocol iprot, testAndSet_args struct) throws org.apache.thrift.TException {
         org.apache.thrift.protocol.TField schemeField;
         iprot.readStructBegin();
         while (true)
         {
           schemeField = iprot.readFieldBegin();
-          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) {
             break;
           }
           switch (schemeField.id) {
@@ -2808,16 +2939,16 @@ public class CraqService {
               if (schemeField.type == org.apache.thrift.protocol.TType.I64) {
                 struct.requestVersion = iprot.readI64();
                 struct.setRequestVersionIsSet(true);
-              } else { 
+              } else {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
-            case 2: // OBJ_EXPECTED
+            case 2: // OBJ
               if (schemeField.type == org.apache.thrift.protocol.TType.STRUCT) {
-                struct.objExpected = new CraqObject();
-                struct.objExpected.read(iprot);
-                struct.setObjExpectedIsSet(true);
-              } else { 
+                struct.obj = new CraqObject();
+                struct.obj.read(iprot);
+                struct.setObjIsSet(true);
+              } else {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
@@ -2832,16 +2963,17 @@ public class CraqService {
         struct.validate();
       }
 
-      public void write(org.apache.thrift.protocol.TProtocol oprot, testAndSet_args struct) throws org.apache.thrift.TException {
+      @Override
+	public void write(org.apache.thrift.protocol.TProtocol oprot, testAndSet_args struct) throws org.apache.thrift.TException {
         struct.validate();
 
         oprot.writeStructBegin(STRUCT_DESC);
         oprot.writeFieldBegin(REQUEST_VERSION_FIELD_DESC);
         oprot.writeI64(struct.requestVersion);
         oprot.writeFieldEnd();
-        if (struct.objExpected != null) {
-          oprot.writeFieldBegin(OBJ_EXPECTED_FIELD_DESC);
-          struct.objExpected.write(oprot);
+        if (struct.obj != null) {
+          oprot.writeFieldBegin(OBJ_FIELD_DESC);
+          struct.obj.write(oprot);
           oprot.writeFieldEnd();
         }
         oprot.writeFieldStop();
@@ -2851,7 +2983,8 @@ public class CraqService {
     }
 
     private static class testAndSet_argsTupleSchemeFactory implements org.apache.thrift.scheme.SchemeFactory {
-      public testAndSet_argsTupleScheme getScheme() {
+      @Override
+	public testAndSet_argsTupleScheme getScheme() {
         return new testAndSet_argsTupleScheme();
       }
     }
@@ -2865,15 +2998,15 @@ public class CraqService {
         if (struct.isSetRequestVersion()) {
           optionals.set(0);
         }
-        if (struct.isSetObjExpected()) {
+        if (struct.isSetObj()) {
           optionals.set(1);
         }
         oprot.writeBitSet(optionals, 2);
         if (struct.isSetRequestVersion()) {
           oprot.writeI64(struct.requestVersion);
         }
-        if (struct.isSetObjExpected()) {
-          struct.objExpected.write(oprot);
+        if (struct.isSetObj()) {
+          struct.obj.write(oprot);
         }
       }
 
@@ -2886,9 +3019,9 @@ public class CraqService {
           struct.setRequestVersionIsSet(true);
         }
         if (incoming.get(1)) {
-          struct.objExpected = new CraqObject();
-          struct.objExpected.read(iprot);
-          struct.setObjExpectedIsSet(true);
+          struct.obj = new CraqObject();
+          struct.obj.read(iprot);
+          struct.setObjIsSet(true);
         }
       }
     }
@@ -2901,12 +3034,12 @@ public class CraqService {
   public static class testAndSet_result implements org.apache.thrift.TBase<testAndSet_result, testAndSet_result._Fields>, java.io.Serializable, Cloneable, Comparable<testAndSet_result>   {
     private static final org.apache.thrift.protocol.TStruct STRUCT_DESC = new org.apache.thrift.protocol.TStruct("testAndSet_result");
 
-    private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.BOOL, (short)0);
+    private static final org.apache.thrift.protocol.TField SUCCESS_FIELD_DESC = new org.apache.thrift.protocol.TField("success", org.apache.thrift.protocol.TType.I64, (short)0);
 
     private static final org.apache.thrift.scheme.SchemeFactory STANDARD_SCHEME_FACTORY = new testAndSet_resultStandardSchemeFactory();
     private static final org.apache.thrift.scheme.SchemeFactory TUPLE_SCHEME_FACTORY = new testAndSet_resultTupleSchemeFactory();
 
-    public boolean success; // required
+    public long success; // required
 
     /** The set of fields this struct contains, along with convenience methods for finding and manipulating them. */
     public enum _Fields implements org.apache.thrift.TFieldIdEnum {
@@ -2957,11 +3090,13 @@ public class CraqService {
         _fieldName = fieldName;
       }
 
-      public short getThriftFieldId() {
+      @Override
+	public short getThriftFieldId() {
         return _thriftId;
       }
 
-      public java.lang.String getFieldName() {
+      @Override
+	public java.lang.String getFieldName() {
         return _fieldName;
       }
     }
@@ -2972,8 +3107,8 @@ public class CraqService {
     public static final java.util.Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
     static {
       java.util.Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new java.util.EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-      tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
-          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.BOOL)));
+      tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT,
+          new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64          , "Version")));
       metaDataMap = java.util.Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(testAndSet_result.class, metaDataMap);
     }
@@ -2982,7 +3117,7 @@ public class CraqService {
     }
 
     public testAndSet_result(
-      boolean success)
+      long success)
     {
       this();
       this.success = success;
@@ -2997,21 +3132,22 @@ public class CraqService {
       this.success = other.success;
     }
 
-    public testAndSet_result deepCopy() {
+    @Override
+	public testAndSet_result deepCopy() {
       return new testAndSet_result(this);
     }
 
     @Override
     public void clear() {
       setSuccessIsSet(false);
-      this.success = false;
+      this.success = 0;
     }
 
-    public boolean isSuccess() {
+    public long getSuccess() {
       return this.success;
     }
 
-    public testAndSet_result setSuccess(boolean success) {
+    public testAndSet_result setSuccess(long success) {
       this.success = success;
       setSuccessIsSet(true);
       return this;
@@ -3030,30 +3166,33 @@ public class CraqService {
       __isset_bitfield = org.apache.thrift.EncodingUtils.setBit(__isset_bitfield, __SUCCESS_ISSET_ID, value);
     }
 
-    public void setFieldValue(_Fields field, java.lang.Object value) {
+    @Override
+	public void setFieldValue(_Fields field, java.lang.Object value) {
       switch (field) {
       case SUCCESS:
         if (value == null) {
           unsetSuccess();
         } else {
-          setSuccess((java.lang.Boolean)value);
+          setSuccess((java.lang.Long)value);
         }
         break;
 
       }
     }
 
-    public java.lang.Object getFieldValue(_Fields field) {
+    @Override
+	public java.lang.Object getFieldValue(_Fields field) {
       switch (field) {
       case SUCCESS:
-        return isSuccess();
+        return getSuccess();
 
       }
       throw new java.lang.IllegalStateException();
     }
 
     /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
-    public boolean isSet(_Fields field) {
+    @Override
+	public boolean isSet(_Fields field) {
       if (field == null) {
         throw new java.lang.IllegalArgumentException();
       }
@@ -3096,7 +3235,7 @@ public class CraqService {
     public int hashCode() {
       int hashCode = 1;
 
-      hashCode = hashCode * 8191 + ((success) ? 131071 : 524287);
+      hashCode = hashCode * 8191 + org.apache.thrift.TBaseHelper.hashCode(success);
 
       return hashCode;
     }
@@ -3122,15 +3261,18 @@ public class CraqService {
       return 0;
     }
 
-    public _Fields fieldForId(int fieldId) {
+    @Override
+	public _Fields fieldForId(int fieldId) {
       return _Fields.findByThriftId(fieldId);
     }
 
-    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+    @Override
+	public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
       scheme(iprot).read(iprot, this);
     }
 
-    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+    @Override
+	public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
       scheme(oprot).write(oprot, this);
       }
 
@@ -3170,28 +3312,30 @@ public class CraqService {
     }
 
     private static class testAndSet_resultStandardSchemeFactory implements org.apache.thrift.scheme.SchemeFactory {
-      public testAndSet_resultStandardScheme getScheme() {
+      @Override
+	public testAndSet_resultStandardScheme getScheme() {
         return new testAndSet_resultStandardScheme();
       }
     }
 
     private static class testAndSet_resultStandardScheme extends org.apache.thrift.scheme.StandardScheme<testAndSet_result> {
 
-      public void read(org.apache.thrift.protocol.TProtocol iprot, testAndSet_result struct) throws org.apache.thrift.TException {
+      @Override
+	public void read(org.apache.thrift.protocol.TProtocol iprot, testAndSet_result struct) throws org.apache.thrift.TException {
         org.apache.thrift.protocol.TField schemeField;
         iprot.readStructBegin();
         while (true)
         {
           schemeField = iprot.readFieldBegin();
-          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) {
             break;
           }
           switch (schemeField.id) {
             case 0: // SUCCESS
-              if (schemeField.type == org.apache.thrift.protocol.TType.BOOL) {
-                struct.success = iprot.readBool();
+              if (schemeField.type == org.apache.thrift.protocol.TType.I64) {
+                struct.success = iprot.readI64();
                 struct.setSuccessIsSet(true);
-              } else { 
+              } else {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
@@ -3206,13 +3350,14 @@ public class CraqService {
         struct.validate();
       }
 
-      public void write(org.apache.thrift.protocol.TProtocol oprot, testAndSet_result struct) throws org.apache.thrift.TException {
+      @Override
+	public void write(org.apache.thrift.protocol.TProtocol oprot, testAndSet_result struct) throws org.apache.thrift.TException {
         struct.validate();
 
         oprot.writeStructBegin(STRUCT_DESC);
         if (struct.isSetSuccess()) {
           oprot.writeFieldBegin(SUCCESS_FIELD_DESC);
-          oprot.writeBool(struct.success);
+          oprot.writeI64(struct.success);
           oprot.writeFieldEnd();
         }
         oprot.writeFieldStop();
@@ -3222,7 +3367,8 @@ public class CraqService {
     }
 
     private static class testAndSet_resultTupleSchemeFactory implements org.apache.thrift.scheme.SchemeFactory {
-      public testAndSet_resultTupleScheme getScheme() {
+      @Override
+	public testAndSet_resultTupleScheme getScheme() {
         return new testAndSet_resultTupleScheme();
       }
     }
@@ -3238,7 +3384,7 @@ public class CraqService {
         }
         oprot.writeBitSet(optionals, 1);
         if (struct.isSetSuccess()) {
-          oprot.writeBool(struct.success);
+          oprot.writeI64(struct.success);
         }
       }
 
@@ -3247,7 +3393,7 @@ public class CraqService {
         org.apache.thrift.protocol.TTupleProtocol iprot = (org.apache.thrift.protocol.TTupleProtocol) prot;
         java.util.BitSet incoming = iprot.readBitSet(1);
         if (incoming.get(0)) {
-          struct.success = iprot.readBool();
+          struct.success = iprot.readI64();
           struct.setSuccessIsSet(true);
         }
       }
@@ -3322,11 +3468,13 @@ public class CraqService {
         _fieldName = fieldName;
       }
 
-      public short getThriftFieldId() {
+      @Override
+	public short getThriftFieldId() {
         return _thriftId;
       }
 
-      public java.lang.String getFieldName() {
+      @Override
+	public java.lang.String getFieldName() {
         return _fieldName;
       }
     }
@@ -3337,9 +3485,9 @@ public class CraqService {
     public static final java.util.Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
     static {
       java.util.Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new java.util.EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-      tmpMap.put(_Fields.OBJ, new org.apache.thrift.meta_data.FieldMetaData("obj", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+      tmpMap.put(_Fields.OBJ, new org.apache.thrift.meta_data.FieldMetaData("obj", org.apache.thrift.TFieldRequirementType.DEFAULT,
           new org.apache.thrift.meta_data.StructMetaData(org.apache.thrift.protocol.TType.STRUCT, CraqObject.class)));
-      tmpMap.put(_Fields.VERSION, new org.apache.thrift.meta_data.FieldMetaData("version", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+      tmpMap.put(_Fields.VERSION, new org.apache.thrift.meta_data.FieldMetaData("version", org.apache.thrift.TFieldRequirementType.DEFAULT,
           new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64          , "Version")));
       metaDataMap = java.util.Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(writeVersioned_args.class, metaDataMap);
@@ -3369,7 +3517,8 @@ public class CraqService {
       this.version = other.version;
     }
 
-    public writeVersioned_args deepCopy() {
+    @Override
+	public writeVersioned_args deepCopy() {
       return new writeVersioned_args(this);
     }
 
@@ -3427,7 +3576,8 @@ public class CraqService {
       __isset_bitfield = org.apache.thrift.EncodingUtils.setBit(__isset_bitfield, __VERSION_ISSET_ID, value);
     }
 
-    public void setFieldValue(_Fields field, java.lang.Object value) {
+    @Override
+	public void setFieldValue(_Fields field, java.lang.Object value) {
       switch (field) {
       case OBJ:
         if (value == null) {
@@ -3448,7 +3598,8 @@ public class CraqService {
       }
     }
 
-    public java.lang.Object getFieldValue(_Fields field) {
+    @Override
+	public java.lang.Object getFieldValue(_Fields field) {
       switch (field) {
       case OBJ:
         return getObj();
@@ -3461,7 +3612,8 @@ public class CraqService {
     }
 
     /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
-    public boolean isSet(_Fields field) {
+    @Override
+	public boolean isSet(_Fields field) {
       if (field == null) {
         throw new java.lang.IllegalArgumentException();
       }
@@ -3555,15 +3707,18 @@ public class CraqService {
       return 0;
     }
 
-    public _Fields fieldForId(int fieldId) {
+    @Override
+	public _Fields fieldForId(int fieldId) {
       return _Fields.findByThriftId(fieldId);
     }
 
-    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+    @Override
+	public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
       scheme(iprot).read(iprot, this);
     }
 
-    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+    @Override
+	public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
       scheme(oprot).write(oprot, this);
     }
 
@@ -3614,20 +3769,22 @@ public class CraqService {
     }
 
     private static class writeVersioned_argsStandardSchemeFactory implements org.apache.thrift.scheme.SchemeFactory {
-      public writeVersioned_argsStandardScheme getScheme() {
+      @Override
+	public writeVersioned_argsStandardScheme getScheme() {
         return new writeVersioned_argsStandardScheme();
       }
     }
 
     private static class writeVersioned_argsStandardScheme extends org.apache.thrift.scheme.StandardScheme<writeVersioned_args> {
 
-      public void read(org.apache.thrift.protocol.TProtocol iprot, writeVersioned_args struct) throws org.apache.thrift.TException {
+      @Override
+	public void read(org.apache.thrift.protocol.TProtocol iprot, writeVersioned_args struct) throws org.apache.thrift.TException {
         org.apache.thrift.protocol.TField schemeField;
         iprot.readStructBegin();
         while (true)
         {
           schemeField = iprot.readFieldBegin();
-          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) {
             break;
           }
           switch (schemeField.id) {
@@ -3636,7 +3793,7 @@ public class CraqService {
                 struct.obj = new CraqObject();
                 struct.obj.read(iprot);
                 struct.setObjIsSet(true);
-              } else { 
+              } else {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
@@ -3644,7 +3801,7 @@ public class CraqService {
               if (schemeField.type == org.apache.thrift.protocol.TType.I64) {
                 struct.version = iprot.readI64();
                 struct.setVersionIsSet(true);
-              } else { 
+              } else {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
@@ -3659,7 +3816,8 @@ public class CraqService {
         struct.validate();
       }
 
-      public void write(org.apache.thrift.protocol.TProtocol oprot, writeVersioned_args struct) throws org.apache.thrift.TException {
+      @Override
+	public void write(org.apache.thrift.protocol.TProtocol oprot, writeVersioned_args struct) throws org.apache.thrift.TException {
         struct.validate();
 
         oprot.writeStructBegin(STRUCT_DESC);
@@ -3678,7 +3836,8 @@ public class CraqService {
     }
 
     private static class writeVersioned_argsTupleSchemeFactory implements org.apache.thrift.scheme.SchemeFactory {
-      public writeVersioned_argsTupleScheme getScheme() {
+      @Override
+	public writeVersioned_argsTupleScheme getScheme() {
         return new writeVersioned_argsTupleScheme();
       }
     }
@@ -3780,11 +3939,13 @@ public class CraqService {
         _fieldName = fieldName;
       }
 
-      public short getThriftFieldId() {
+      @Override
+	public short getThriftFieldId() {
         return _thriftId;
       }
 
-      public java.lang.String getFieldName() {
+      @Override
+	public java.lang.String getFieldName() {
         return _fieldName;
       }
     }
@@ -3804,7 +3965,8 @@ public class CraqService {
     public writeVersioned_result(writeVersioned_result other) {
     }
 
-    public writeVersioned_result deepCopy() {
+    @Override
+	public writeVersioned_result deepCopy() {
       return new writeVersioned_result(this);
     }
 
@@ -3812,19 +3974,22 @@ public class CraqService {
     public void clear() {
     }
 
-    public void setFieldValue(_Fields field, java.lang.Object value) {
+    @Override
+	public void setFieldValue(_Fields field, java.lang.Object value) {
       switch (field) {
       }
     }
 
-    public java.lang.Object getFieldValue(_Fields field) {
+    @Override
+	public java.lang.Object getFieldValue(_Fields field) {
       switch (field) {
       }
       throw new java.lang.IllegalStateException();
     }
 
     /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
-    public boolean isSet(_Fields field) {
+    @Override
+	public boolean isSet(_Fields field) {
       if (field == null) {
         throw new java.lang.IllegalArgumentException();
       }
@@ -3870,15 +4035,18 @@ public class CraqService {
       return 0;
     }
 
-    public _Fields fieldForId(int fieldId) {
+    @Override
+	public _Fields fieldForId(int fieldId) {
       return _Fields.findByThriftId(fieldId);
     }
 
-    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+    @Override
+	public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
       scheme(iprot).read(iprot, this);
     }
 
-    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+    @Override
+	public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
       scheme(oprot).write(oprot, this);
       }
 
@@ -3913,20 +4081,22 @@ public class CraqService {
     }
 
     private static class writeVersioned_resultStandardSchemeFactory implements org.apache.thrift.scheme.SchemeFactory {
-      public writeVersioned_resultStandardScheme getScheme() {
+      @Override
+	public writeVersioned_resultStandardScheme getScheme() {
         return new writeVersioned_resultStandardScheme();
       }
     }
 
     private static class writeVersioned_resultStandardScheme extends org.apache.thrift.scheme.StandardScheme<writeVersioned_result> {
 
-      public void read(org.apache.thrift.protocol.TProtocol iprot, writeVersioned_result struct) throws org.apache.thrift.TException {
+      @Override
+	public void read(org.apache.thrift.protocol.TProtocol iprot, writeVersioned_result struct) throws org.apache.thrift.TException {
         org.apache.thrift.protocol.TField schemeField;
         iprot.readStructBegin();
         while (true)
         {
           schemeField = iprot.readFieldBegin();
-          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) {
             break;
           }
           switch (schemeField.id) {
@@ -3941,7 +4111,8 @@ public class CraqService {
         struct.validate();
       }
 
-      public void write(org.apache.thrift.protocol.TProtocol oprot, writeVersioned_result struct) throws org.apache.thrift.TException {
+      @Override
+	public void write(org.apache.thrift.protocol.TProtocol oprot, writeVersioned_result struct) throws org.apache.thrift.TException {
         struct.validate();
 
         oprot.writeStructBegin(STRUCT_DESC);
@@ -3952,7 +4123,8 @@ public class CraqService {
     }
 
     private static class writeVersioned_resultTupleSchemeFactory implements org.apache.thrift.scheme.SchemeFactory {
-      public writeVersioned_resultTupleScheme getScheme() {
+      @Override
+	public writeVersioned_resultTupleScheme getScheme() {
         return new writeVersioned_resultTupleScheme();
       }
     }
@@ -4030,11 +4202,13 @@ public class CraqService {
         _fieldName = fieldName;
       }
 
-      public short getThriftFieldId() {
+      @Override
+	public short getThriftFieldId() {
         return _thriftId;
       }
 
-      public java.lang.String getFieldName() {
+      @Override
+	public java.lang.String getFieldName() {
         return _fieldName;
       }
     }
@@ -4054,7 +4228,8 @@ public class CraqService {
     public versionQuery_args(versionQuery_args other) {
     }
 
-    public versionQuery_args deepCopy() {
+    @Override
+	public versionQuery_args deepCopy() {
       return new versionQuery_args(this);
     }
 
@@ -4062,19 +4237,22 @@ public class CraqService {
     public void clear() {
     }
 
-    public void setFieldValue(_Fields field, java.lang.Object value) {
+    @Override
+	public void setFieldValue(_Fields field, java.lang.Object value) {
       switch (field) {
       }
     }
 
-    public java.lang.Object getFieldValue(_Fields field) {
+    @Override
+	public java.lang.Object getFieldValue(_Fields field) {
       switch (field) {
       }
       throw new java.lang.IllegalStateException();
     }
 
     /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
-    public boolean isSet(_Fields field) {
+    @Override
+	public boolean isSet(_Fields field) {
       if (field == null) {
         throw new java.lang.IllegalArgumentException();
       }
@@ -4120,15 +4298,18 @@ public class CraqService {
       return 0;
     }
 
-    public _Fields fieldForId(int fieldId) {
+    @Override
+	public _Fields fieldForId(int fieldId) {
       return _Fields.findByThriftId(fieldId);
     }
 
-    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+    @Override
+	public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
       scheme(iprot).read(iprot, this);
     }
 
-    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+    @Override
+	public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
       scheme(oprot).write(oprot, this);
     }
 
@@ -4163,20 +4344,22 @@ public class CraqService {
     }
 
     private static class versionQuery_argsStandardSchemeFactory implements org.apache.thrift.scheme.SchemeFactory {
-      public versionQuery_argsStandardScheme getScheme() {
+      @Override
+	public versionQuery_argsStandardScheme getScheme() {
         return new versionQuery_argsStandardScheme();
       }
     }
 
     private static class versionQuery_argsStandardScheme extends org.apache.thrift.scheme.StandardScheme<versionQuery_args> {
 
-      public void read(org.apache.thrift.protocol.TProtocol iprot, versionQuery_args struct) throws org.apache.thrift.TException {
+      @Override
+	public void read(org.apache.thrift.protocol.TProtocol iprot, versionQuery_args struct) throws org.apache.thrift.TException {
         org.apache.thrift.protocol.TField schemeField;
         iprot.readStructBegin();
         while (true)
         {
           schemeField = iprot.readFieldBegin();
-          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) {
             break;
           }
           switch (schemeField.id) {
@@ -4191,7 +4374,8 @@ public class CraqService {
         struct.validate();
       }
 
-      public void write(org.apache.thrift.protocol.TProtocol oprot, versionQuery_args struct) throws org.apache.thrift.TException {
+      @Override
+	public void write(org.apache.thrift.protocol.TProtocol oprot, versionQuery_args struct) throws org.apache.thrift.TException {
         struct.validate();
 
         oprot.writeStructBegin(STRUCT_DESC);
@@ -4202,7 +4386,8 @@ public class CraqService {
     }
 
     private static class versionQuery_argsTupleSchemeFactory implements org.apache.thrift.scheme.SchemeFactory {
-      public versionQuery_argsTupleScheme getScheme() {
+      @Override
+	public versionQuery_argsTupleScheme getScheme() {
         return new versionQuery_argsTupleScheme();
       }
     }
@@ -4284,11 +4469,13 @@ public class CraqService {
         _fieldName = fieldName;
       }
 
-      public short getThriftFieldId() {
+      @Override
+	public short getThriftFieldId() {
         return _thriftId;
       }
 
-      public java.lang.String getFieldName() {
+      @Override
+	public java.lang.String getFieldName() {
         return _fieldName;
       }
     }
@@ -4299,7 +4486,7 @@ public class CraqService {
     public static final java.util.Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> metaDataMap;
     static {
       java.util.Map<_Fields, org.apache.thrift.meta_data.FieldMetaData> tmpMap = new java.util.EnumMap<_Fields, org.apache.thrift.meta_data.FieldMetaData>(_Fields.class);
-      tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT, 
+      tmpMap.put(_Fields.SUCCESS, new org.apache.thrift.meta_data.FieldMetaData("success", org.apache.thrift.TFieldRequirementType.DEFAULT,
           new org.apache.thrift.meta_data.FieldValueMetaData(org.apache.thrift.protocol.TType.I64          , "Version")));
       metaDataMap = java.util.Collections.unmodifiableMap(tmpMap);
       org.apache.thrift.meta_data.FieldMetaData.addStructMetaDataMap(versionQuery_result.class, metaDataMap);
@@ -4324,7 +4511,8 @@ public class CraqService {
       this.success = other.success;
     }
 
-    public versionQuery_result deepCopy() {
+    @Override
+	public versionQuery_result deepCopy() {
       return new versionQuery_result(this);
     }
 
@@ -4357,7 +4545,8 @@ public class CraqService {
       __isset_bitfield = org.apache.thrift.EncodingUtils.setBit(__isset_bitfield, __SUCCESS_ISSET_ID, value);
     }
 
-    public void setFieldValue(_Fields field, java.lang.Object value) {
+    @Override
+	public void setFieldValue(_Fields field, java.lang.Object value) {
       switch (field) {
       case SUCCESS:
         if (value == null) {
@@ -4370,7 +4559,8 @@ public class CraqService {
       }
     }
 
-    public java.lang.Object getFieldValue(_Fields field) {
+    @Override
+	public java.lang.Object getFieldValue(_Fields field) {
       switch (field) {
       case SUCCESS:
         return getSuccess();
@@ -4380,7 +4570,8 @@ public class CraqService {
     }
 
     /** Returns true if field corresponding to fieldID is set (has been assigned a value) and false otherwise */
-    public boolean isSet(_Fields field) {
+    @Override
+	public boolean isSet(_Fields field) {
       if (field == null) {
         throw new java.lang.IllegalArgumentException();
       }
@@ -4449,15 +4640,18 @@ public class CraqService {
       return 0;
     }
 
-    public _Fields fieldForId(int fieldId) {
+    @Override
+	public _Fields fieldForId(int fieldId) {
       return _Fields.findByThriftId(fieldId);
     }
 
-    public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
+    @Override
+	public void read(org.apache.thrift.protocol.TProtocol iprot) throws org.apache.thrift.TException {
       scheme(iprot).read(iprot, this);
     }
 
-    public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
+    @Override
+	public void write(org.apache.thrift.protocol.TProtocol oprot) throws org.apache.thrift.TException {
       scheme(oprot).write(oprot, this);
       }
 
@@ -4497,20 +4691,22 @@ public class CraqService {
     }
 
     private static class versionQuery_resultStandardSchemeFactory implements org.apache.thrift.scheme.SchemeFactory {
-      public versionQuery_resultStandardScheme getScheme() {
+      @Override
+	public versionQuery_resultStandardScheme getScheme() {
         return new versionQuery_resultStandardScheme();
       }
     }
 
     private static class versionQuery_resultStandardScheme extends org.apache.thrift.scheme.StandardScheme<versionQuery_result> {
 
-      public void read(org.apache.thrift.protocol.TProtocol iprot, versionQuery_result struct) throws org.apache.thrift.TException {
+      @Override
+	public void read(org.apache.thrift.protocol.TProtocol iprot, versionQuery_result struct) throws org.apache.thrift.TException {
         org.apache.thrift.protocol.TField schemeField;
         iprot.readStructBegin();
         while (true)
         {
           schemeField = iprot.readFieldBegin();
-          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) { 
+          if (schemeField.type == org.apache.thrift.protocol.TType.STOP) {
             break;
           }
           switch (schemeField.id) {
@@ -4518,7 +4714,7 @@ public class CraqService {
               if (schemeField.type == org.apache.thrift.protocol.TType.I64) {
                 struct.success = iprot.readI64();
                 struct.setSuccessIsSet(true);
-              } else { 
+              } else {
                 org.apache.thrift.protocol.TProtocolUtil.skip(iprot, schemeField.type);
               }
               break;
@@ -4533,7 +4729,8 @@ public class CraqService {
         struct.validate();
       }
 
-      public void write(org.apache.thrift.protocol.TProtocol oprot, versionQuery_result struct) throws org.apache.thrift.TException {
+      @Override
+	public void write(org.apache.thrift.protocol.TProtocol oprot, versionQuery_result struct) throws org.apache.thrift.TException {
         struct.validate();
 
         oprot.writeStructBegin(STRUCT_DESC);
@@ -4549,7 +4746,8 @@ public class CraqService {
     }
 
     private static class versionQuery_resultTupleSchemeFactory implements org.apache.thrift.scheme.SchemeFactory {
-      public versionQuery_resultTupleScheme getScheme() {
+      @Override
+	public versionQuery_resultTupleScheme getScheme() {
         return new versionQuery_resultTupleScheme();
       }
     }

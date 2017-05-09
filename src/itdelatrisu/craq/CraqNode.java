@@ -303,16 +303,16 @@ public class CraqNode implements CraqService.Iface {
 	}
 
 	@Override
-	public boolean write(CraqObject obj) throws TException {
+	public long write(CraqObject obj) throws TException {
 		logger.debug("[Node {}] Received write request from client...", chain.getIndex());
 
 		// node hasn't initialized?
 		if (tailPool == null || successorPool == null)
-			return false;
+			return -1;
 
 		// can only write to head
 		if (!chain.isHead())
-			return false;
+			return -1;
 
 		testLock.readLock().lock();
 		try {
@@ -329,10 +329,10 @@ public class CraqNode implements CraqService.Iface {
 		long oldCleanVersion = latestCleanVersion.getAndUpdate(x -> x < newVersion ? newVersion : x);
 		if (newVersion > oldCleanVersion)
 			removeOldVersions(latestCleanVersion.get());
+		return latestCleanVersion.get();
 		} finally {
 			testLock.readLock().unlock();
 		}
-		return true;
 	}
 
 	@Override
@@ -385,20 +385,29 @@ public class CraqNode implements CraqService.Iface {
 	}
 
 	@Override
-	public boolean testAndSet(long requestVersion, CraqObject obj) throws TException {
+	public long testAndSet(long requestVersion, CraqObject obj) throws TException {
 		// TODO
 		testLock.writeLock().lock();
 		try {
-			if (latestCleanVersion.get() == requestVersion) {
-				objects.put(requestVersion, obj);
+			// if the requested version is the same as the latest clean version and there is no uncommited write
+			if (latestCleanVersion.get() == requestVersion && latestVersion.get() == latestCleanVersion.get()) {
+				// update version
+				latestVersion.getAndIncrement();
+				latestCleanVersion.getAndIncrement();
+				long newCleanVersion = latestCleanVersion.get();
+
+				objects.put(newCleanVersion, obj);
 
 				// send down chain
 				CraqService.Client successor = getPooledConnection(successorPool);
-				successor.writeVersioned(obj, requestVersion);
+				successor.writeVersioned(obj, newCleanVersion);
 				returnPooledConnection(successorPool, successor);
-				return true;
+
+				removeOldVersions(newCleanVersion);
+
+				return newCleanVersion;
 			}
-			return false;
+			return -1;
 		}
 		finally{
 			testLock.writeLock().unlock();
