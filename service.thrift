@@ -1,5 +1,8 @@
 namespace java itdelatrisu.craq.thrift
 
+/** Version numbers. */
+typedef i64 Version
+
 /** Consistency models. */
 enum CraqConsistencyModel { STRONG, EVENTUAL, EVENTUAL_BOUNDED }
 
@@ -14,7 +17,7 @@ service CraqService {
 	// Client-facing methods
 	// -------------------------------------------------------------------------
 	/** Reads a value with the desired consistency model. */
-	CraqObject read(1:CraqConsistencyModel model, 2:i32 versionBound), // and specify which node?
+	CraqObject read(1:CraqConsistencyModel model, 2:Version versionBound),
 
 	/** Writes a new value. */
 	bool write(1:CraqObject obj),
@@ -26,8 +29,8 @@ service CraqService {
 	// Internal methods
 	// -------------------------------------------------------------------------
 	/** Writes a new value with the given version. */
-	void writeVersioned(1:CraqObject obj, 2:i32 version),
+	void writeVersioned(1:CraqObject obj, 2:Version version),
 
 	/** Returns the latest committed version. */
-	i32 versionQuery()
+	Version versionQuery()
 }

@@ -7,7 +7,7 @@ import java.util.Map;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
@@ -47,13 +47,13 @@ public class CraqNode implements CraqService.Iface {
 	private BlockingQueue<CraqService.Client> tailPool, successorPool;
 
 	/** Current known objects: <version, bytes> */
-	private final Map<Integer, CraqObject> objects = new ConcurrentHashMap<>();
+	private final Map<Long, CraqObject> objects = new ConcurrentHashMap<>();
 
 	/** The latest known clean object version. */
-	private final AtomicInteger latestCleanVersion = new AtomicInteger(-1);
+	private final AtomicLong latestCleanVersion = new AtomicLong(-1);
 
 	/** The latest known version (clean or dirty). */
-	private final AtomicInteger latestVersion = new AtomicInteger(-1);
+	private final AtomicLong latestVersion = new AtomicLong(-1);
 
 	/** Creates a new CRAQ server node. */
 	public CraqNode(boolean crMode, CraqChain chain) {
@@ -180,7 +180,7 @@ public class CraqNode implements CraqService.Iface {
 	}
 
 	@Override
-	public CraqObject read(CraqConsistencyModel model, int versionBound) throws TException {
+	public CraqObject read(CraqConsistencyModel model, long versionBound) throws TException {
 		logger.debug("[Node {}] Received read request from client...", chain.getIndex());
 
 		// node hasn't initialized?
@@ -200,7 +200,7 @@ public class CraqNode implements CraqService.Iface {
 			if (latestVersion.get() > latestCleanVersion.get()) {
 				// latest known version isn't clean, send a version query
 				CraqService.Client tail = getPooledConnection(tailPool);
-				int tailVersion = tail.versionQuery();
+				long tailVersion = tail.versionQuery();
 				returnPooledConnection(tailPool, tail);
 				if (tailVersion < 0)
 					return new CraqObject();  // no clean version yet
@@ -223,7 +223,7 @@ public class CraqNode implements CraqService.Iface {
 		// bounded eventual consistency?
 		else if (model == CraqConsistencyModel.EVENTUAL_BOUNDED) {
 			// return latest known version within the given bound
-			int boundedVersion = latestCleanVersion.get() + Math.min(versionBound, latestVersion.get() - latestCleanVersion.get());
+			long boundedVersion = latestCleanVersion.get() + Math.min(versionBound, latestVersion.get() - latestCleanVersion.get());
 			return objects.get(boundedVersion);
 		}
 
@@ -243,7 +243,7 @@ public class CraqNode implements CraqService.Iface {
 			return false;
 
 		// record new object version
-		int newVersion = latestVersion.incrementAndGet();
+		long newVersion = latestVersion.incrementAndGet();
 		objects.put(newVersion, obj);
 
 		// send down chain
@@ -252,7 +252,7 @@ public class CraqNode implements CraqService.Iface {
 		returnPooledConnection(successorPool, successor);
 
 		// update clean version
-		int oldCleanVersion = latestCleanVersion.getAndUpdate(x -> x < newVersion ? newVersion : x);
+		long oldCleanVersion = latestCleanVersion.getAndUpdate(x -> x < newVersion ? newVersion : x);
 		if (newVersion > oldCleanVersion)
 			removeOldVersions(latestCleanVersion.get());
 
@@ -260,7 +260,7 @@ public class CraqNode implements CraqService.Iface {
 	}
 
 	@Override
-	public void writeVersioned(CraqObject obj, int version) throws TException {
+	public void writeVersioned(CraqObject obj, long version) throws TException {
 		logger.debug("[Node {}] Received write with version: {}", chain.getIndex(), version);
 
 		// add new object version
@@ -277,22 +277,22 @@ public class CraqNode implements CraqService.Iface {
 		}
 
 		// mark clean
-		int oldCleanVersion = latestCleanVersion.getAndUpdate(x -> x < version ? version : x);
+		long oldCleanVersion = latestCleanVersion.getAndUpdate(x -> x < version ? version : x);
 		if (version > oldCleanVersion || chain.isTail())
 			removeOldVersions(latestCleanVersion.get());
 	}
 
 	/** Removes all object versions older than the latest clean one. */
-	private synchronized void removeOldVersions(int latestCleanVersion) {
-		for (Iterator<Map.Entry<Integer, CraqObject>> iter = objects.entrySet().iterator(); iter.hasNext();) {
-			Map.Entry<Integer, CraqObject> entry = iter.next();
+	private synchronized void removeOldVersions(long latestCleanVersion) {
+		for (Iterator<Map.Entry<Long, CraqObject>> iter = objects.entrySet().iterator(); iter.hasNext();) {
+			Map.Entry<Long, CraqObject> entry = iter.next();
 			if (entry.getKey() < latestCleanVersion)
 				iter.remove();
 		}
 	}
 
 	@Override
-	public int versionQuery() throws TException {
+	public long versionQuery() throws TException {
 		logger.debug("[Node {}] Received version query...", chain.getIndex());
 
 		// only tail should receive version queries
