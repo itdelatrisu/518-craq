@@ -60,6 +60,9 @@ public class CraqNode implements CraqService.Iface {
 	/** The latest known version (clean or dirty). */
 	private final AtomicLong latestVersion = new AtomicLong(-1);
 
+	/** The garbage manager. */
+	private final GarbageManager garbageManager = new GarbageManager();
+
 	/** Creates a new CRAQ server node. */
 	public CraqNode(boolean crMode, CraqChain chain) {
 		this.crMode = crMode;
@@ -79,6 +82,9 @@ public class CraqNode implements CraqService.Iface {
 				}
 			}
 		}.start();
+
+		// start the garbage manager
+		garbageManager.start();
 
 		// run the server
 		try {
