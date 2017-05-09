@@ -116,7 +116,7 @@ public class TestClient {
 			System.out.printf("readEventualBounded() arguments:\n    <version_bound>\n");
 			System.exit(1);
 		}
-		int versionBound = Integer.parseInt(args[0]);
+		long versionBound = Long.parseLong(args[0]);
 
 		CraqClient client = new CraqClient(host, port);
 		client.connect();
@@ -128,6 +128,22 @@ public class TestClient {
 		client.close();
 	}
 
+	public static void testAndSet(String host, int port, String[] args) throws TException {
+		if (args.length < 2) {
+			System.out.printf("testAndSet() arguments:\n    <requestVersion> <value>\n");
+			System.exit(1);
+		}
+		
+		long requestVersion = Long.parseLong(args[0]);
+		String value = args[1];
+
+		CraqClient client = new CraqClient(host, port);
+		client.connect();
+		boolean status = client.testAndSet(requestVersion, value);
+		logger.info("testAndSet(): testing object {} ({})", value, status ? "SUCCESS" : "FAIL");
+		client.close();
+	}
+	
 	/** Benchmarks read operations. */
 	public static void benchmarkRead(String host, int port, String[] args)
 		throws TTransportException, InterruptedException, ExecutionException {

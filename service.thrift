@@ -24,7 +24,7 @@ service CraqService {
 	bool write(1:CraqObject obj),
 	
 	/** Performs a test-and-set operation. **/
-	bool testAndSet(1:CraqObject obj, 2:CraqObject objExpected),
+	bool testAndSet(1:Version requestVersion, 2:CraqObject obj),
 
 	// -------------------------------------------------------------------------
 	// Internal methods

@@ -78,7 +78,7 @@ public class CraqClient {
 	}
 
 	/** Reads an object, returning null if the read failed for any reason. */
-	public ReadObject read(CraqConsistencyModel model, int versionBound) throws TException {
+	public ReadObject read(CraqConsistencyModel model, long versionBound) throws TException {
 		CraqObject obj = server.read(model, versionBound);
 		if (!obj.isSetValue())
 			return null;
@@ -86,6 +86,13 @@ public class CraqClient {
 			new String(obj.getValue(), StandardCharsets.UTF_8),
 			obj.isSetDirty() ? obj.isDirty() : null
 		);
+	}
+	
+	/** Reads an object, returning null if the read failed for any reason. */
+	public boolean testAndSet(long requestVersion, String value) throws TException {
+		CraqObject obj = new CraqObject();
+		obj.setValue(value.getBytes(StandardCharsets.UTF_8));
+		return server.testAndSet(requestVersion, obj);
 	}
 
 	/** Closes the server connection. */
