@@ -1,0 +1,29 @@
+# This is a simple ns script. Comments start with #.
+set ns [new Simulator]                  
+source tb_compat.tcl
+
+set nodeA [$ns node]
+set nodeB [$ns node]
+set nodeC [$ns node]
+set nodeD [$ns node]
+
+#set link0 [$ns duplex-link $nodeB $nodeA 30Mb 50ms DropTail]
+#tb-set-link-loss $link0 0.01
+
+set lan0 [$ns make-lan "$nodeC $nodeB " 100Mb 0ms]
+set lan1 [$ns make-lan "$nodeC $nodeA " 100Mb 0ms]
+set lan2 [$ns make-lan "$nodeB $nodeA " 100Mb 0ms]
+
+set lanca [$ns make-lan "$nodeD $nodeA " 100Mb 0ms]
+set lancb [$ns make-lan "$nodeD $nodeB " 100Mb 0ms]
+set lancc [$ns make-lan "$nodeD $nodeC " 100Mb 0ms]
+
+# Set the OS on a couple.
+#tb-set-node-os $nodeA RHL90-STD
+#tb-set-node-os $nodeB RHL90-STD
+#tb-set-node-os $nodeC RHL90-STD         
+
+$ns rtproto Static
+
+# Go!
+$ns run                                 
