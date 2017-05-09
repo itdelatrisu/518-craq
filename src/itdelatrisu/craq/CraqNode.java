@@ -1,5 +1,9 @@
 package itdelatrisu.craq;
 
+import itdelatrisu.craq.thrift.CraqConsistencyModel;
+import itdelatrisu.craq.thrift.CraqObject;
+import itdelatrisu.craq.thrift.CraqService;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -25,10 +29,6 @@ import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
-import itdelatrisu.craq.thrift.CraqConsistencyModel;
-import itdelatrisu.craq.thrift.CraqObject;
-import itdelatrisu.craq.thrift.CraqService;
-
 /** CRAQ server node. */
 public class CraqNode implements CraqService.Iface {
 	private static final Logger logger = LoggerFactory.getLogger(CraqNode.class);
@@ -53,10 +53,10 @@ public class CraqNode implements CraqService.Iface {
 
 	/** Object read-write lock. */
 	private final ReadWriteLock objectLock = new ReentrantReadWriteLock(true);
-	
+
 	/** Test-and-set read-write lock */
 	private final ReadWriteLock testLock = new ReentrantReadWriteLock(true);
-	
+
 	/** The latest known clean object version. */
 	private final AtomicLong latestCleanVersion = new AtomicLong(-1);
 
@@ -314,7 +314,7 @@ public class CraqNode implements CraqService.Iface {
 		if (!chain.isHead())
 			return false;
 
-		testLock.readLock().lock(); 
+		testLock.readLock().lock();
 		try {
 		// record new object version
 		long newVersion = latestVersion.incrementAndGet();
@@ -338,7 +338,7 @@ public class CraqNode implements CraqService.Iface {
 	@Override
 	public void writeVersioned(CraqObject obj, long version) throws TException {
 		logger.debug("[Node {}] Received write with version: {}", chain.getIndex(), version);
-		
+
 		// add new object version
 		objects.put(version, obj);
 
@@ -384,23 +384,25 @@ public class CraqNode implements CraqService.Iface {
 		return latestCleanVersion.get();
 	}
 
+	@Override
 	public boolean testAndSet(long requestVersion, CraqObject obj) throws TException {
 		// TODO
-		if (latestCleanVersion.get() == requestVersion) {
-			testLock.writeLock().lock();
-			try { 
+		testLock.writeLock().lock();
+		try {
+			if (latestCleanVersion.get() == requestVersion) {
 				objects.put(requestVersion, obj);
-				
+
 				// send down chain
 				CraqService.Client successor = getPooledConnection(successorPool);
 				successor.writeVersioned(obj, requestVersion);
-				returnPooledConnection(successorPool, successor);			
-			} finally{
-				testLock.writeLock().unlock();
+				returnPooledConnection(successorPool, successor);
+				return true;
 			}
-			return true;
+			return false;
 		}
-		return false;
+		finally{
+			testLock.writeLock().unlock();
+		}
 	}
 
 	/** Starts the CRAQ server node. */
