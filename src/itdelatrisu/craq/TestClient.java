@@ -147,8 +147,8 @@ public class TestClient {
 			futures.add(executor.submit(() -> {
 				long ops = 0;
 				while (!Thread.currentThread().isInterrupted()) {
-					client.read(CraqConsistencyModel.STRONG, 0);
-					ops++;
+					if (client.read(CraqConsistencyModel.STRONG, 0) != null)
+						ops++;
 				}
 				return ops;
 			}));
@@ -198,8 +198,8 @@ public class TestClient {
 			futures.add(executor.submit(() -> {
 				long ops = 0;
 				while (!Thread.currentThread().isInterrupted()) {
-					client.write(value);
-					ops++;
+					if (client.write(value))
+						ops++;
 				}
 				return ops;
 			}));
@@ -269,6 +269,8 @@ public class TestClient {
 			"benchmarkReadWrite(): wrote initial {}-byte object ({})",
 			numBytes, status ? "SUCCESS" : "FAIL"
 		);
+		if (!status)
+			return;
 
 		// for each write rate...
 		logger.info("benchmarkReadWrite(): using {} readers and {} writers...", numReaders, numWriters);
@@ -286,8 +288,8 @@ public class TestClient {
 				writeFutures.add(executor.submit(() -> {
 					long writes = 0;
 					while (writes < writesNeeded && !Thread.currentThread().isInterrupted()) {
-						writer.write(value);
-						writes++;
+						if (writer.write(value))
+							writes++;
 					}
 					return writes;
 				}));
@@ -297,8 +299,8 @@ public class TestClient {
 				readFutures.add(executor.submit(() -> {
 					long reads = 0;
 					while (!Thread.currentThread().isInterrupted()) {
-						reader.read(CraqConsistencyModel.STRONG, 0);
-						reads++;
+						if (reader.read(CraqConsistencyModel.STRONG, 0) != null)
+							reads++;
 					}
 					return reads;
 				}));

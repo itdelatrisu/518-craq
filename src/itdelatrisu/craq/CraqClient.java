@@ -70,14 +70,14 @@ public class CraqClient {
 		logger.debug("Connected to server at {}:{}", host, port);
 	}
 
-	/** Writes an object. */
+	/** Writes an object, returning success (true) or failure (false). */
 	public boolean write(String value) throws TException {
 		CraqObject obj = new CraqObject();
 		obj.setValue(value.getBytes(StandardCharsets.UTF_8));
 		return server.write(obj);
 	}
 
-	/** Reads an object. */
+	/** Reads an object, returning null if the read failed for any reason. */
 	public ReadObject read(CraqConsistencyModel model, int versionBound) throws TException {
 		CraqObject obj = server.read(model, versionBound);
 		if (!obj.isSetValue())
