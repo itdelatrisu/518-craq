@@ -20,6 +20,7 @@ import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
 
+import itdelatrisu.craq.CraqClient.ReadObject;
 import itdelatrisu.craq.thrift.CraqConsistencyModel;
 
 /** CRAQ client tests. */
@@ -71,8 +72,11 @@ public class TestClient {
 	public static void readStrong(String host, int port, String[] args) throws TException {
 		CraqClient client = new CraqClient(host, port);
 		client.connect();
-		String value = client.read(CraqConsistencyModel.STRONG, 0);
-		logger.info("readStrong(): read object {}", value);
+		ReadObject obj = client.read(CraqConsistencyModel.STRONG, 0);
+		if (obj == null)
+			logger.info("readStrong(): null object");
+		else
+			logger.info("readStrong(): read object {}", obj);
 		client.close();
 	}
 
@@ -80,8 +84,11 @@ public class TestClient {
 	public static void readEventual(String host, int port, String[] args) throws TException {
 		CraqClient client = new CraqClient(host, port);
 		client.connect();
-		String value = client.read(CraqConsistencyModel.EVENTUAL, 0);
-		logger.info("readEventual(): read object {}", value);
+		ReadObject obj = client.read(CraqConsistencyModel.EVENTUAL, 0);
+		if (obj == null)
+			logger.info("readEventual(): null object");
+		else
+			logger.info("readEventual(): read object {}", obj);
 		client.close();
 	}
 
@@ -95,8 +102,11 @@ public class TestClient {
 
 		CraqClient client = new CraqClient(host, port);
 		client.connect();
-		String value = client.read(CraqConsistencyModel.EVENTUAL_BOUNDED, versionBound);
-		logger.info("readStrong(): read object {}", value);
+		ReadObject obj = client.read(CraqConsistencyModel.EVENTUAL_BOUNDED, versionBound);
+		if (obj == null)
+			logger.info("readEventualBounded(): null object");
+		else
+			logger.info("readEventualBounded(): read object {}", obj);
 		client.close();
 	}
 

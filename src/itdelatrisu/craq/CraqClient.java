@@ -1,6 +1,5 @@
 package itdelatrisu.craq;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 import org.apache.thrift.TException;
@@ -33,6 +32,26 @@ public class CraqClient {
 	/** The Thrift transport stream. */
 	private TTransport transport;
 
+	/** Wrapper class for a read object. */
+	public class ReadObject {
+		/** The object's value. */
+		public final String value;
+		/** Whether the read was dirty (true) or clean (false). */
+		public final Boolean dirty;
+		/** Constructor. */
+		public ReadObject(String value, Boolean dirty) {
+			this.value = value;
+			this.dirty = dirty;
+		}
+		@Override
+		public String toString() {
+			if (dirty == null)
+				return String.format("%s", value);
+			else
+				return String.format("%s (%s)", value, dirty ? "DIRTY" : "CLEAN");
+		}
+	}
+
 	/** Creates a new CRAQ client. */
 	public CraqClient(String host, int port) {
 		this.host = host;
@@ -53,22 +72,20 @@ public class CraqClient {
 
 	/** Writes an object. */
 	public boolean write(String value) throws TException {
-		ByteBuffer buf = ByteBuffer.wrap(value.getBytes(StandardCharsets.UTF_8));
 		CraqObject obj = new CraqObject();
-		obj.setValue(buf);
+		obj.setValue(value.getBytes(StandardCharsets.UTF_8));
 		return server.write(obj);
 	}
 
 	/** Reads an object. */
-	public String read(CraqConsistencyModel model, int versionBound) throws TException {
+	public ReadObject read(CraqConsistencyModel model, int versionBound) throws TException {
 		CraqObject obj = server.read(model, versionBound);
-		String value = null;
-		if (obj.isSetValue()) {
-			byte[] bytes = new byte[obj.value.remaining()];
-			obj.value.get(bytes);
-			value = new String(bytes, StandardCharsets.UTF_8);
-		}
-		return value;
+		if (!obj.isSetValue())
+			return null;
+		return new ReadObject(
+			new String(obj.getValue(), StandardCharsets.UTF_8),
+			obj.isSetDirty() ? obj.isDirty() : null
+		);
 	}
 
 	/** Closes the server connection. */

@@ -9,6 +9,7 @@ enum CraqConsistencyModel { STRONG, EVENTUAL, EVENTUAL_BOUNDED }
 /** Object envelope. */
 struct CraqObject {
 	1: optional binary value;
+	2: optional bool dirty;
 }
 
 /** CRAQ service. */

@@ -190,6 +190,15 @@ public class CraqNode implements CraqService.Iface {
 			logger.error("Failed to return the connection to the pool!");
 	}
 
+	/** Creates a shallow copy of an object. */
+	private CraqObject copyObject(CraqObject obj, Boolean dirty) {
+		CraqObject copy = new CraqObject();
+		copy.setValue(obj.value);
+		if (dirty != null)
+			copy.setDirty(dirty);
+		return copy;
+	}
+
 	@Override
 	public CraqObject read(CraqConsistencyModel model, long versionBound) throws TException {
 		logger.debug("[Node {}] Received read request from client...", chain.getIndex());
@@ -226,7 +235,9 @@ public class CraqNode implements CraqService.Iface {
 						objectLock.readLock().unlock();
 					}
 				}
-				return obj;
+				if (obj == null)
+					throw new TException("Returning null object after a version query!");
+				return copyObject(obj, true);
 			} else if (latestCleanVersion.get() < 0) {
 				// no clean version yet
 				return new CraqObject();
@@ -234,7 +245,10 @@ public class CraqNode implements CraqService.Iface {
 				// tail: return the latest known version
 				objectLock.readLock().lock();
 				try {
-					return objects.get(latestVersion.get());
+					CraqObject obj = objects.get(latestVersion.get());
+					if (obj == null)
+						throw new TException("Returning null object from the tail!");
+					return copyObject(obj, false);
 				} finally {
 					objectLock.readLock().unlock();
 				}
@@ -242,7 +256,10 @@ public class CraqNode implements CraqService.Iface {
 				// latest known version is clean, return it
 				objectLock.readLock().lock();
 				try {
-					return objects.get(latestCleanVersion.get());
+					CraqObject obj = objects.get(latestCleanVersion.get());
+					if (obj == null)
+						logger.error("Returning null object from a clean read!");
+					return copyObject(obj, false);
 				} finally {
 					objectLock.readLock().unlock();
 				}
@@ -254,7 +271,10 @@ public class CraqNode implements CraqService.Iface {
 			// return latest known version
 			objectLock.readLock().lock();
 			try {
-				return objects.get(latestVersion.get());
+				CraqObject obj = objects.get(latestVersion.get());
+				if (obj == null)
+					throw new TException("Returning null object for an eventual read!");
+				return copyObject(obj, null);
 			} finally {
 				objectLock.readLock().unlock();
 			}
@@ -267,7 +287,10 @@ public class CraqNode implements CraqService.Iface {
 			try {
 				long cleanVersion = latestCleanVersion.get();
 				long boundedVersion = cleanVersion + Math.min(versionBound, latestVersion.get() - cleanVersion);
-				return objects.get(boundedVersion);
+				CraqObject obj = objects.get(boundedVersion);
+				if (obj == null)
+					throw new TException("Returning null object for a bounded eventual read!");
+				return copyObject(obj, null);
 			} finally {
 				objectLock.readLock().unlock();
 			}
