@@ -32,7 +32,7 @@ public class TestClient {
 	/** Basic write operation. */
 	public static void write(String host, int port, String[] args) throws TException {
 		if (args.length < 1) {
-			System.out.printf("write() arguments: <value>");
+			System.out.printf("write() arguments:\n    <value>\n");
 			System.exit(1);
 		}
 		String value = args[0];
@@ -47,7 +47,7 @@ public class TestClient {
 	/** Basic write operation. */
 	public static void writeBytes(String host, int port, String[] args) throws TException {
 		if (args.length < 1) {
-			System.out.printf("writeBytes() arguments: <size_bytes>");
+			System.out.printf("writeBytes() arguments:\n    <size_bytes>\n");
 			System.exit(1);
 		}
 		int numBytes = Integer.parseInt(args[0]);
@@ -88,7 +88,7 @@ public class TestClient {
 	/** Basic read operation (eventual bounded consistency). */
 	public static void readEventualBounded(String host, int port, String[] args) throws TException {
 		if (args.length < 1) {
-			System.out.printf("readEventualBounded() arguments: <version_bound>");
+			System.out.printf("readEventualBounded() arguments:\n    <version_bound>\n");
 			System.exit(1);
 		}
 		int versionBound = Integer.parseInt(args[0]);
@@ -100,11 +100,11 @@ public class TestClient {
 		client.close();
 	}
 
-	/** Benchmarks a read operation. */
+	/** Benchmarks read operations. */
 	public static void benchmarkRead(String host, int port, String[] args)
 		throws TTransportException, InterruptedException, ExecutionException {
 		if (args.length < 2) {
-			System.out.printf("benchmarkRead() arguments: <num_clients> <milliseconds> {<other_ip>:<other_port> ...}");
+			System.out.printf("benchmarkRead() arguments:\n    <num_clients> <milliseconds> {<additional_ip>:<additional_port> ...}\n");
 			System.exit(1);
 		}
 		int numClients = Integer.parseInt(args[0]);
@@ -152,16 +152,19 @@ public class TestClient {
 		for (Future<Long> future : futures)
 			ops += future.get();
 		long opsPerSecond = Math.round(ops / (totalTime * 1e-9));
-		logger.info("benchmarkRead(): {} ops over {}ns using {} clients ({} ops/sec)", ops, totalTime, numClients, opsPerSecond);
+		logger.info(
+			"benchmarkRead(): {} ops over {}ns using {} clients ({} ops/sec)",
+			ops, totalTime, numClients, opsPerSecond
+		);
 		for (CraqClient client : clients)
 			client.close();
 	}
 
-	/** Benchmarks a write operation. */
+	/** Benchmarks write operations. */
 	public static void benchmarkWrite(String host, int port, String[] args)
 		throws TTransportException, InterruptedException, ExecutionException {
 		if (args.length < 3) {
-			System.out.printf("benchmarkWrite() arguments: <num_clients> <size_bytes> <milliseconds>");
+			System.out.printf("benchmarkWrite() arguments:\n    <num_clients> <size_bytes> <milliseconds>\n");
 			System.exit(1);
 		}
 		int numClients = Integer.parseInt(args[0]);
@@ -200,9 +203,120 @@ public class TestClient {
 		for (Future<Long> future : futures)
 			ops += future.get();
 		long opsPerSecond = Math.round(ops / (totalTime * 1e-9));
-		logger.info("benchmarkWrite(): {} ops over {}ns using {} clients ({} ops/sec)", ops, totalTime, numClients, opsPerSecond);
+		logger.info(
+			"benchmarkWrite(): {} ops over {}ns using {} clients ({} ops/sec)",
+			ops, totalTime, numClients, opsPerSecond
+		);
 		for (CraqClient client : clients)
 			client.close();
+	}
+
+	/** Benchmarks read operations as write rate increases.  */
+	public static void benchmarkReadWrite(String host, int port, String[] args)
+		throws TException, InterruptedException, ExecutionException {
+		if (args.length < 8) {
+			System.out.printf(
+				"benchmarkReadWrite() arguments:\n    " +
+				"<num_readers> <num_writers> <size_bytes> " +
+				"<min_writes_sec> <max_writes_sec> <rate_step> " +
+				"<milliseconds> [<read_ip>:<read_port> ...]\n"
+			);
+			System.exit(1);
+		}
+		int numReaders = Integer.parseInt(args[0]);
+		int numWriters = Integer.parseInt(args[1]);
+		int numBytes = Integer.parseInt(args[2]);
+		int minWriteRate = Integer.parseInt(args[3]);
+		int maxWriteRate = Integer.parseInt(args[4]);
+		int rateStep = Integer.parseInt(args[5]);
+		int ms = Integer.parseInt(args[6]);
+		String value = getRandomString(numBytes);
+		int numReadServers = args.length - 7;
+		String[] hosts = new String[numReadServers];
+		int[] ports = new int[numReadServers];
+		for (int i = 0; i < numReadServers; i++) {
+			String[] s = args[i + 7].split(":");
+			hosts[i] = s[0];
+			ports[i] = Integer.parseInt(s[1]);
+		}
+
+		// connect to servers
+		CraqClient[] writers = new CraqClient[numWriters];
+		for (int i = 0; i < numWriters; i++) {
+			writers[i] = new CraqClient(host, port);
+			writers[i].connect();
+		}
+		CraqClient[] readers = new CraqClient[numReaders];
+		for (int i = 0; i < numReaders; i++) {
+			int readServerIndex = i % numReadServers;
+			readers[i] = new CraqClient(hosts[readServerIndex], ports[readServerIndex]);
+			readers[i].connect();
+		}
+
+		// write initial object
+		boolean status = writers[0].write(value);
+		logger.info(
+			"benchmarkReadWrite(): wrote initial {}-byte object ({})",
+			numBytes, status ? "SUCCESS" : "FAIL"
+		);
+
+		// for each write rate...
+		logger.info("benchmarkReadWrite(): using {} readers and {} writers...", numReaders, numWriters);
+		for (int k = minWriteRate; k <= maxWriteRate; k += rateStep) {
+			long writesNeeded = (long) k * ms / 1000 / numWriters;
+
+			// begin execution
+			ExecutorService executor = Executors.newFixedThreadPool(numWriters + numReaders);
+			List<Future<Long>>
+				readFutures = new ArrayList<>(numReaders),
+				writeFutures = new ArrayList<>(numWriters);
+			long startTime = System.nanoTime();
+			for (int i = 0; i < numWriters; i++) {
+				CraqClient writer = writers[i];
+				writeFutures.add(executor.submit(() -> {
+					long writes = 0;
+					while (writes < writesNeeded && !Thread.currentThread().isInterrupted()) {
+						writer.write(value);
+						writes++;
+					}
+					return writes;
+				}));
+			}
+			for (int i = 0; i < numReaders; i++) {
+				CraqClient reader = readers[i];
+				readFutures.add(executor.submit(() -> {
+					long reads = 0;
+					while (!Thread.currentThread().isInterrupted()) {
+						reader.read(CraqConsistencyModel.STRONG, 0);
+						reads++;
+					}
+					return reads;
+				}));
+			}
+			executor.awaitTermination(ms, TimeUnit.MILLISECONDS);
+			executor.shutdownNow();
+			long totalTime = System.nanoTime() - startTime;
+
+			// aggregate results
+			long writes = 0, reads = 0;
+			for (Future<Long> writeFuture : writeFutures)
+				writes += writeFuture.get();
+			for (Future<Long> readFuture : readFutures)
+				reads += readFuture.get();
+			long readsPerSecond = Math.round(reads / (totalTime * 1e-9));
+			long writesPerSecond = Math.round(writes / (totalTime * 1e-9));
+			logger.info(
+				"benchmarkReadWrite(): {} reads over {}ns ({} reads/sec, {} writes/sec [target: {}])",
+				reads, totalTime, readsPerSecond, writesPerSecond, k
+			);
+
+			Thread.sleep(200);
+		}
+
+		for (CraqClient writer : writers)
+			writer.close();
+		for (CraqClient reader : readers)
+			reader.close();
 	}
 
 	/** Prints the list of invokable methods. */
