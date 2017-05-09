@@ -48,7 +48,7 @@ public class CraqClient {
 		CraqService.Client client = new CraqService.Client(protocol);
 
 		this.server = client;
-		logger.info("Connected to server at {}:{}", host, port);
+		logger.debug("Connected to server at {}:{}", host, port);
 	}
 
 	/** Writes an object. */
