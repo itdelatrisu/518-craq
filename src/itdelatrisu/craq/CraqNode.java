@@ -114,7 +114,7 @@ public class CraqNode implements CraqService.Iface {
 		CraqService.Client client;
 		while (true) {
 			try {
-				client = connectToServer(chain.getTail().host, chain.getTail().port);
+				client = connectToServer(host, port);
 				break;
 			} catch (TTransportException e) {
 				Thread.sleep(CONNECTION_SLEEP_TIME);
@@ -126,7 +126,7 @@ public class CraqNode implements CraqService.Iface {
 		queue.offer(client);
 		while (queue.remainingCapacity() > 0) {
 			try {
-				queue.offer(connectToServer(chain.getTail().host, chain.getTail().port));
+				queue.offer(connectToServer(host, port));
 			} catch (TTransportException e) {
 				logger.error("Failed to create connection pool.", e);
 				break;
@@ -269,19 +269,17 @@ public class CraqNode implements CraqService.Iface {
 		// update latest version
 		latestVersion.getAndUpdate(x -> x < version ? version : x);
 
-		// tail: mark clean
-		if (chain.isTail()) {
-			int oldCleanVersion = latestCleanVersion.getAndUpdate(x -> x < version ? version : x);
-			if (version > oldCleanVersion)
-				removeOldVersions(latestCleanVersion.get());
-		}
-
 		// non-tail: send down chain
-		else {
+		if (!chain.isTail()) {
 			CraqService.Client successor = getPooledConnection(successorPool);
 			successor.writeVersioned(obj, version);
 			returnPooledConnection(successorPool, successor);
 		}
+
+		// mark clean
+		int oldCleanVersion = latestCleanVersion.getAndUpdate(x -> x < version ? version : x);
+		if (version > oldCleanVersion || chain.isTail())
+			removeOldVersions(latestCleanVersion.get());
 	}
 
 	/** Removes all object versions older than the latest clean one. */
