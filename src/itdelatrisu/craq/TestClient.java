@@ -26,6 +26,9 @@ import itdelatrisu.craq.thrift.CraqConsistencyModel;
 public class TestClient {
 	private static final Logger logger = LoggerFactory.getLogger(TestClient.class);
 
+	/** RNG instance. */
+	private static final Random RANDOM = new Random();
+
 	/** Basic write operation. */
 	public static void write(String host, int port, String[] args) throws TException {
 		if (args.length < 1) {
@@ -39,6 +42,29 @@ public class TestClient {
 		boolean status = client.write(value);
 		logger.info("write(): writing object {} ({})", value, status ? "SUCCESS" : "FAIL");
 		client.close();
+	}
+
+	/** Basic write operation. */
+	public static void writeBytes(String host, int port, String[] args) throws TException {
+		if (args.length < 1) {
+			System.out.printf("writeBytes() arguments: <size_bytes>");
+			System.exit(1);
+		}
+		int numBytes = Integer.parseInt(args[0]);
+		String value = getRandomString(numBytes);
+
+		CraqClient client = new CraqClient(host, port);
+		client.connect();
+		boolean status = client.write(value);
+		logger.info("writeBytes(): writing {}-byte object ({})", numBytes, status ? "SUCCESS" : "FAIL");
+		client.close();
+	}
+
+	/** Returns a random string with the given number of bytes. */
+	private static String getRandomString(int numBytes) {
+		byte[] b = new byte[numBytes];
+		RANDOM.nextBytes(b);
+		return new String(b, StandardCharsets.UTF_8);
 	}
 
 	/** Basic read operation (strong consistency). */
@@ -140,10 +166,8 @@ public class TestClient {
 		}
 		int numClients = Integer.parseInt(args[0]);
 		int numBytes = Integer.parseInt(args[1]);
-		byte[] b = new byte[numBytes];
-		new Random().nextBytes(b);
-		String value = new String(b, StandardCharsets.UTF_8);
 		int ms = Integer.parseInt(args[2]);
+		String value = getRandomString(numBytes);
 
 		// connect to servers
 		CraqClient[] clients = new CraqClient[numClients];
