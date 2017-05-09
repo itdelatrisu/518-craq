@@ -8,6 +8,8 @@ import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.LinkedBlockingQueue;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.locks.ReadWriteLock;
+import java.util.concurrent.locks.ReentrantReadWriteLock;
 
 import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
@@ -48,6 +50,9 @@ public class CraqNode implements CraqService.Iface {
 
 	/** Current known objects: <version, bytes> */
 	private final Map<Long, CraqObject> objects = new ConcurrentHashMap<>();
+
+	/** Object read-write lock. */
+	private final ReadWriteLock objectLock = new ReentrantReadWriteLock(true);
 
 	/** The latest known clean object version. */
 	private final AtomicLong latestCleanVersion = new AtomicLong(-1);
@@ -197,34 +202,69 @@ public class CraqNode implements CraqService.Iface {
 
 		// strong consistency?
 		if (model == CraqConsistencyModel.STRONG) {
-			if (latestVersion.get() > latestCleanVersion.get()) {
-				// latest known version isn't clean, send a version query
+			if (latestVersion.get() > latestCleanVersion.get() && !chain.isTail()) {
+				// non-tail: latest known version isn't clean, send a version query
 				CraqService.Client tail = getPooledConnection(tailPool);
 				long tailVersion = tail.versionQuery();
 				returnPooledConnection(tailPool, tail);
 				if (tailVersion < 0)
 					return new CraqObject();  // no clean version yet
-				return objects.get(tailVersion);
+				CraqObject obj = objects.get(tailVersion);
+				if (obj == null) {
+					// newer version already committed (old one erased),
+					// just return the latest clean version
+					objectLock.readLock().lock();
+					try {
+						obj = objects.get(latestCleanVersion.get());
+					} finally {
+						objectLock.readLock().unlock();
+					}
+				}
+				return obj;
 			} else if (latestCleanVersion.get() < 0) {
 				// no clean version yet
 				return new CraqObject();
+			} else if (chain.isTail()) {
+				// tail: return the latest known version
+				objectLock.readLock().lock();
+				try {
+					return objects.get(latestVersion.get());
+				} finally {
+					objectLock.readLock().unlock();
+				}
 			} else {
 				// latest known version is clean, return it
-				return objects.get(latestCleanVersion.get());
+				objectLock.readLock().lock();
+				try {
+					return objects.get(latestCleanVersion.get());
+				} finally {
+					objectLock.readLock().unlock();
+				}
 			}
 		}
 
 		// eventual consistency?
 		else if (model == CraqConsistencyModel.EVENTUAL) {
 			// return latest known version
-			return objects.get(latestVersion.get());
+			objectLock.readLock().lock();
+			try {
+				return objects.get(latestVersion.get());
+			} finally {
+				objectLock.readLock().unlock();
+			}
 		}
 
 		// bounded eventual consistency?
 		else if (model == CraqConsistencyModel.EVENTUAL_BOUNDED) {
 			// return latest known version within the given bound
-			long boundedVersion = latestCleanVersion.get() + Math.min(versionBound, latestVersion.get() - latestCleanVersion.get());
-			return objects.get(boundedVersion);
+			objectLock.readLock().lock();
+			try {
+				long cleanVersion = latestCleanVersion.get();
+				long boundedVersion = cleanVersion + Math.min(versionBound, latestVersion.get() - cleanVersion);
+				return objects.get(boundedVersion);
+			} finally {
+				objectLock.readLock().unlock();
+			}
 		}
 
 		throw new TException("Internal error!");
@@ -283,11 +323,16 @@ public class CraqNode implements CraqService.Iface {
 	}
 
 	/** Removes all object versions older than the latest clean one. */
-	private synchronized void removeOldVersions(long latestCleanVersion) {
-		for (Iterator<Map.Entry<Long, CraqObject>> iter = objects.entrySet().iterator(); iter.hasNext();) {
-			Map.Entry<Long, CraqObject> entry = iter.next();
-			if (entry.getKey() < latestCleanVersion)
-				iter.remove();
+	private void removeOldVersions(long latestCleanVersion) {
+		objectLock.writeLock().lock();
+		try {
+			for (Iterator<Map.Entry<Long, CraqObject>> iter = objects.entrySet().iterator(); iter.hasNext();) {
+				Map.Entry<Long, CraqObject> entry = iter.next();
+				if (entry.getKey() < latestCleanVersion)
+					iter.remove();
+			}
+		} finally {
+			objectLock.writeLock().unlock();
 		}
 	}
 
