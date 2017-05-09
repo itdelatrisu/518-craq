@@ -30,6 +30,24 @@ public class TestClient {
 	/** RNG instance. */
 	private static final Random RANDOM = new Random();
 
+	/** Read statistics wrapper. */
+	private static class ReadStats {
+		/** Read counters. */
+		private final long succeeded, clean, dirty;
+		/** Constructor. */
+		public ReadStats(long succeeded, long clean, long dirty) {
+			this.succeeded = succeeded;
+			this.clean = clean;
+			this.dirty = dirty;
+		}
+		/** Returns the number of successful reads. */
+		public long getTotalReads() { return succeeded; }
+		/** Returns the number of clean reads. */
+		public long getCleanReads() { return clean; }
+		/** Returns the number of dirty reads. */
+		public long getDirtyReads() { return dirty; }
+	}
+
 	/** Basic write operation. */
 	public static void write(String host, int port, String[] args) throws TException {
 		if (args.length < 1) {
@@ -279,9 +297,8 @@ public class TestClient {
 
 			// begin execution
 			ExecutorService executor = Executors.newFixedThreadPool(numWriters + numReaders);
-			List<Future<Long>>
-				readFutures = new ArrayList<>(numReaders),
-				writeFutures = new ArrayList<>(numWriters);
+			List<Future<Long>> writeFutures = new ArrayList<>(numWriters);
+			List<Future<ReadStats>> readFutures = new ArrayList<>(numReaders);
 			long startTime = System.nanoTime();
 			for (int i = 0; i < numWriters; i++) {
 				CraqClient writer = writers[i];
@@ -297,12 +314,20 @@ public class TestClient {
 			for (int i = 0; i < numReaders; i++) {
 				CraqClient reader = readers[i];
 				readFutures.add(executor.submit(() -> {
-					long reads = 0;
+					long reads = 0, clean = 0, dirty = 0;
 					while (!Thread.currentThread().isInterrupted()) {
-						if (reader.read(CraqConsistencyModel.STRONG, 0) != null)
+						ReadObject obj = reader.read(CraqConsistencyModel.STRONG, 0);
+						if (obj != null) {
 							reads++;
+							if (obj.dirty != null) {
+								if (obj.dirty)
+									dirty++;
+								else
+									clean++;
+							}
+						}
 					}
-					return reads;
+					return new ReadStats(reads, clean, dirty);
 				}));
 			}
 			executor.awaitTermination(ms, TimeUnit.MILLISECONDS);
@@ -310,18 +335,25 @@ public class TestClient {
 			long totalTime = System.nanoTime() - startTime;
 
 			// aggregate results
-			long writes = 0, reads = 0;
+			long writes = 0, reads = 0, clean = 0, dirty = 0;
 			for (Future<Long> writeFuture : writeFutures)
 				writes += writeFuture.get();
-			for (Future<Long> readFuture : readFutures)
-				reads += readFuture.get();
-			long readsPerSecond = Math.round(reads / (totalTime * 1e-9));
+			for (Future<ReadStats> readFuture : readFutures) {
+				ReadStats stats = readFuture.get();
+				reads += stats.getTotalReads();
+				clean += stats.getCleanReads();
+				dirty += stats.getDirtyReads();
+			}
 			long writesPerSecond = Math.round(writes / (totalTime * 1e-9));
+			long readsPerSecond = Math.round(reads / (totalTime * 1e-9));
+			long cleanReadsPerSecond = Math.round(clean / (totalTime * 1e-9));
+			long dirtyReadsPerSecond = Math.round(dirty / (totalTime * 1e-9));
 			logger.info(
-				"benchmarkReadWrite(): {} reads over {}ns ({} reads/sec, {} writes/sec [target: {}])",
-				reads, totalTime, readsPerSecond, writesPerSecond, k
+				"benchmarkReadWrite(): {} reads over {}ns ({} reads/sec [{} clean, {} dirty], {} writes/sec [target: {}])",
+				reads, totalTime, readsPerSecond, cleanReadsPerSecond, dirtyReadsPerSecond, writesPerSecond, k
 			);
 
+			System.gc();
 			Thread.sleep(200);
 		}
 
