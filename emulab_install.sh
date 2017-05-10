@@ -15,3 +15,6 @@ sudo apt-get -y install openjdk-8-jdk maven
 
 # configure java binaries
 update-alternatives --set java /usr/lib/jvm/java-8-openjdk-amd64/jre/bin/java
+
+# print IP address
+/sbin/ifconfig eth0 | grep 'inet addr' | cut -d: -f2 | awk '{print $1}'
