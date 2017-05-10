@@ -194,6 +194,7 @@ public class TestClient {
 				run + 1, trials, ops, totalTime, numClients, opsPerSecond
 			);
 		}
+		Collections.sort(throughputs);
 		logger.info(
 			"benchmarkRead(): [avg] {} ops/sec, [1st] {} ops/sec, [med] {} ops/sec, [99th] {} ops/sec",
 			String.format("%.2f", throughputs.stream().mapToLong(Long::longValue).average().getAsDouble()),
@@ -256,6 +257,7 @@ public class TestClient {
 				ops, totalTime, numClients, opsPerSecond
 			);
 		}
+		Collections.sort(throughputs);
 		logger.info(
 			"benchmarkWrite(): [avg] {} ops/sec, [1st] {} ops/sec, [med] {} ops/sec, [99th] {} ops/sec",
 			String.format("%.2f", throughputs.stream().mapToLong(Long::longValue).average().getAsDouble()),
@@ -318,6 +320,7 @@ public class TestClient {
 				ops, totalTime, opsPerSecond
 			);
 		}
+		Collections.sort(throughputs);
 		logger.info(
 			"benchmarkTestAndSet(): [avg] {} ops/sec, [1st] {} ops/sec, [med] {} ops/sec, [99th] {} ops/sec",
 			String.format("%.2f", throughputs.stream().mapToLong(Long::longValue).average().getAsDouble()),
