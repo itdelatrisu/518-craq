@@ -257,6 +257,58 @@ public class TestClient {
 			client.close();
 	}
 
+	/** Benchmarks test-and-set operations. */
+	public static void benchmarkTestAndSet(String host, int port, String[] args)
+		throws TException, InterruptedException, ExecutionException {
+		if (args.length < 2) {
+			System.out.printf("benchmarkTestAndSet() arguments:\n    <size_bytes> <milliseconds>\n");
+			System.exit(1);
+		}
+		int numBytes = Integer.parseInt(args[0]);
+		int ms = Integer.parseInt(args[1]);
+		String value = getRandomString(numBytes);
+
+		// connect to servers
+		CraqClient client = new CraqClient(host, port);
+		client.connect();
+
+		// write initial object (to get the current version)
+		long newVersion = client.write(value);
+		logger.info(
+			"benchmarkTestAndSet(): wrote initial {}-byte object ({})",
+			numBytes, newVersion >= 0 ? "version " + newVersion : "FAIL"
+		);
+		if (newVersion < 0)
+			return;
+
+		// begin execution
+		ExecutorService executor = Executors.newFixedThreadPool(1);
+		long startTime = System.nanoTime();
+		Future<Long> future = executor.submit(() -> {
+			long ops = 0, version = newVersion;
+			while (!Thread.currentThread().isInterrupted()) {
+				long v = client.testAndSet(value, version);
+				if (v >= 0) {
+					ops++;
+					version = v;
+				}
+			}
+			return ops;
+		});
+		executor.awaitTermination(ms, TimeUnit.MILLISECONDS);
+		executor.shutdownNow();
+		long totalTime = System.nanoTime() - startTime;
+
+		// aggregate results
+		long ops = future.get();
+		long opsPerSecond = Math.round(ops / (totalTime * 1e-9));
+		logger.info(
+			"benchmarkTestAndSet(): {} ops over {}ns ({} ops/sec)",
+			ops, totalTime, opsPerSecond
+		);
+		client.close();
+	}
+
 	/** Benchmarks read operations as write rate increases.  */
 	public static void benchmarkReadWrite(String host, int port, String[] args)
 		throws TException, InterruptedException, ExecutionException {
