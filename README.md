@@ -34,13 +34,13 @@ Available client methods
 ------------------------
 * benchmarkLatency <size_bytes> <milliseconds> <num_busy_readers> {<busy_read_ip>:<busy_read_port> ...}
     Benchmarks latency of clean/dirty reads and writes under configurable load.
-* benchmarkRead <num_clients> <milliseconds> {<additional_ip>:<additional_port> ...}
+* benchmarkRead <num_clients> <milliseconds> <trials> {<additional_ip>:<additional_port> ...}
     Benchmarks read operations.
 * benchmarkReadWrite <num_readers> <num_writers> <size_bytes> <min_writes_sec> <max_writes_sec> <rate_step> <milliseconds> [<read_ip>:<read_port> ...]
     Benchmarks read operations as write rate increases.
-* benchmarkTestAndSet <size_bytes> <milliseconds>
+* benchmarkTestAndSet <size_bytes> <milliseconds> <trials>
     Benchmarks test-and-set operations.
-* benchmarkWrite <num_clients> <size_bytes> <milliseconds>
+* benchmarkWrite <num_clients> <size_bytes> <milliseconds> <trials>
     Benchmarks write operations.
 * readEventual
     Basic read operation (eventual consistency).
