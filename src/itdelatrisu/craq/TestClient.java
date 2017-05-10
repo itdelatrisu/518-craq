@@ -73,11 +73,10 @@ public class TestClient {
 			System.exit(1);
 		}
 		int numBytes = Integer.parseInt(args[0]);
-		String value = getRandomString(numBytes);
 
 		CraqClient client = new CraqClient(host, port);
 		client.connect();
-		long newVersion = client.write(value);
+		long newVersion = client.write(getRandomString(numBytes));
 		logger.info(
 			"writeBytes(): writing {}-byte object ({})",
 			numBytes, newVersion >= 0 ? "version " + newVersion : "FAIL"
@@ -218,7 +217,6 @@ public class TestClient {
 		int numClients = Integer.parseInt(args[0]);
 		int numBytes = Integer.parseInt(args[1]);
 		int ms = Integer.parseInt(args[2]);
-		String value = getRandomString(numBytes);
 
 		// connect to servers
 		CraqClient[] clients = new CraqClient[numClients];
@@ -236,7 +234,7 @@ public class TestClient {
 			futures.add(executor.submit(() -> {
 				long ops = 0;
 				while (!Thread.currentThread().isInterrupted()) {
-					if (client.write(value) >= 0)
+					if (client.write(getRandomString(numBytes)) >= 0)
 						ops++;
 				}
 				return ops;
@@ -270,14 +268,13 @@ public class TestClient {
 		}
 		int numBytes = Integer.parseInt(args[0]);
 		int ms = Integer.parseInt(args[1]);
-		String value = getRandomString(numBytes);
 
 		// connect to servers
 		CraqClient client = new CraqClient(host, port);
 		client.connect();
 
 		// write initial object (to get the current version)
-		long newVersion = client.write(value);
+		long newVersion = client.write(getRandomString(numBytes));
 		logger.info(
 			"benchmarkTestAndSet(): wrote initial {}-byte object ({})",
 			numBytes, newVersion >= 0 ? "version " + newVersion : "FAIL"
@@ -291,7 +288,7 @@ public class TestClient {
 		Future<Long> future = executor.submit(() -> {
 			long ops = 0, version = newVersion;
 			while (!Thread.currentThread().isInterrupted()) {
-				long v = client.testAndSet(value, version);
+				long v = client.testAndSet(getRandomString(numBytes), version);
 				if (v >= 0) {
 					ops++;
 					version = v;
@@ -334,7 +331,6 @@ public class TestClient {
 		int maxWriteRate = Integer.parseInt(args[4]);
 		int rateStep = Integer.parseInt(args[5]);
 		int ms = Integer.parseInt(args[6]);
-		String value = getRandomString(numBytes);
 		int numReadServers = args.length - 7;
 		String[] hosts = new String[numReadServers];
 		int[] ports = new int[numReadServers];
@@ -358,7 +354,7 @@ public class TestClient {
 		}
 
 		// write initial object
-		long newVersion = writers[0].write(value);
+		long newVersion = writers[0].write(getRandomString(numBytes));
 		logger.info(
 			"benchmarkReadWrite(): wrote initial {}-byte object ({})",
 			numBytes, newVersion >= 0 ? "version " + newVersion : "FAIL"
@@ -381,7 +377,7 @@ public class TestClient {
 				writeFutures.add(executor.submit(() -> {
 					long writes = 0;
 					while (writes < writesNeeded && !Thread.currentThread().isInterrupted()) {
-						if (writer.write(value) >= 0)
+						if (writer.write(getRandomString(numBytes)) >= 0)
 							writes++;
 					}
 					return writes;
@@ -453,7 +449,6 @@ public class TestClient {
 		int numBytes = Integer.parseInt(args[0]);
 		int ms = Integer.parseInt(args[1]);
 		int numBusyReaders = Integer.parseInt(args[2]);
-		String value = getRandomString(numBytes);
 		int numBusyReadServers = args.length - 3;
 		String[] hosts = new String[numBusyReadServers];
 		int[] ports = new int[numBusyReadServers];
@@ -474,7 +469,7 @@ public class TestClient {
 		}
 
 		// write initial object
-		long newVersion = client.write(value);
+		long newVersion = client.write(getRandomString(numBytes));
 		logger.info(
 			"benchmarkLatency(): wrote initial {}-byte object ({})",
 			numBytes, newVersion >= 0 ? "version " + newVersion : "FAIL"
@@ -499,7 +494,7 @@ public class TestClient {
 					}
 				});
 			}
-			Thread.sleep(1000);  // wait before benchmarking
+			Thread.sleep(500);  // wait before benchmarking
 		}
 
 		// start benchmarking
@@ -529,7 +524,7 @@ public class TestClient {
 			List<Long> latencies = new ArrayList<Long>();
 			while (!Thread.currentThread().isInterrupted()) {
 				long start = System.nanoTime();
-				long version = client.write(value);
+				long version = client.write(getRandomString(numBytes));
 				long end = System.nanoTime();
 				if (version >= 0)
 					latencies.add(end - start);
