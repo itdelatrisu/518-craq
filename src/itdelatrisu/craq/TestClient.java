@@ -48,12 +48,8 @@ public class TestClient {
 		public long getDirtyReads() { return dirty; }
 	}
 
-	/** Basic write operation. */
+	@TestMethod(desc="Basic write operation.", minArgs=1, params="<value>")
 	public static void write(String host, int port, String[] args) throws TException {
-		if (args.length < 1) {
-			System.out.printf("write() arguments:\n    <value>\n");
-			System.exit(1);
-		}
 		String value = args[0];
 
 		CraqClient client = new CraqClient(host, port);
@@ -66,12 +62,8 @@ public class TestClient {
 		client.close();
 	}
 
-	/** Basic write operation. */
+	@TestMethod(desc="Basic fixed-size write operation.", minArgs=1, params="<size_bytes>")
 	public static void writeBytes(String host, int port, String[] args) throws TException {
-		if (args.length < 1) {
-			System.out.printf("writeBytes() arguments:\n    <size_bytes>\n");
-			System.exit(1);
-		}
 		int numBytes = Integer.parseInt(args[0]);
 
 		CraqClient client = new CraqClient(host, port);
@@ -84,12 +76,8 @@ public class TestClient {
 		client.close();
 	}
 
-	/** Basic test-and-set operation. */
+	@TestMethod(desc="Basic test-and-set operation.", minArgs=2, params="<value> <expected_version>")
 	public static void testAndSet(String host, int port, String[] args) throws TException {
-		if (args.length < 2) {
-			System.out.printf("testAndSet() arguments:\n    <value> <expectedVersion>\n");
-			System.exit(1);
-		}
 		String value = args[0];
 		long expectedVersion = Long.parseLong(args[1]);
 
@@ -103,7 +91,7 @@ public class TestClient {
 		client.close();
 	}
 
-	/** Basic read operation (strong consistency). */
+	@TestMethod(desc="Basic read operation (strong consistency).")
 	public static void readStrong(String host, int port, String[] args) throws TException {
 		CraqClient client = new CraqClient(host, port);
 		client.connect();
@@ -115,7 +103,7 @@ public class TestClient {
 		client.close();
 	}
 
-	/** Basic read operation (eventual consistency). */
+	@TestMethod(desc="Basic read operation (eventual consistency).")
 	public static void readEventual(String host, int port, String[] args) throws TException {
 		CraqClient client = new CraqClient(host, port);
 		client.connect();
@@ -127,12 +115,8 @@ public class TestClient {
 		client.close();
 	}
 
-	/** Basic read operation (eventual bounded consistency). */
+	@TestMethod(desc="Basic read operation (eventual bounded consistency).", minArgs=1, params="<version_bound>")
 	public static void readEventualBounded(String host, int port, String[] args) throws TException {
-		if (args.length < 1) {
-			System.out.printf("readEventualBounded() arguments:\n    <version_bound>\n");
-			System.exit(1);
-		}
 		long versionBound = Long.parseLong(args[0]);
 
 		CraqClient client = new CraqClient(host, port);
@@ -145,13 +129,10 @@ public class TestClient {
 		client.close();
 	}
 
-	/** Benchmarks read operations. */
+	@TestMethod(desc="Benchmarks read operations.", minArgs=2,
+	            params="<num_clients> <milliseconds> {<additional_ip>:<additional_port> ...}")
 	public static void benchmarkRead(String host, int port, String[] args)
 		throws TTransportException, InterruptedException, ExecutionException {
-		if (args.length < 2) {
-			System.out.printf("benchmarkRead() arguments:\n    <num_clients> <milliseconds> {<additional_ip>:<additional_port> ...}\n");
-			System.exit(1);
-		}
 		int numClients = Integer.parseInt(args[0]);
 		int ms = Integer.parseInt(args[1]);
 		int numServers = 1 + args.length - 2;
@@ -207,13 +188,10 @@ public class TestClient {
 			client.close();
 	}
 
-	/** Benchmarks write operations. */
+	@TestMethod(desc="Benchmarks write operations.", minArgs=3,
+	            params="<num_clients> <size_bytes> <milliseconds>")
 	public static void benchmarkWrite(String host, int port, String[] args)
 		throws TTransportException, InterruptedException, ExecutionException {
-		if (args.length < 3) {
-			System.out.printf("benchmarkWrite() arguments:\n    <num_clients> <size_bytes> <milliseconds>\n");
-			System.exit(1);
-		}
 		int numClients = Integer.parseInt(args[0]);
 		int numBytes = Integer.parseInt(args[1]);
 		int ms = Integer.parseInt(args[2]);
@@ -259,13 +237,10 @@ public class TestClient {
 			client.close();
 	}
 
-	/** Benchmarks test-and-set operations. */
+	@TestMethod(desc="Benchmarks test-and-set operations.", minArgs=2,
+	            params="<size_bytes> <milliseconds>")
 	public static void benchmarkTestAndSet(String host, int port, String[] args)
 		throws TException, InterruptedException, ExecutionException {
-		if (args.length < 2) {
-			System.out.printf("benchmarkTestAndSet() arguments:\n    <size_bytes> <milliseconds>\n");
-			System.exit(1);
-		}
 		int numBytes = Integer.parseInt(args[0]);
 		int ms = Integer.parseInt(args[1]);
 
@@ -312,18 +287,13 @@ public class TestClient {
 		client.close();
 	}
 
+	@TestMethod(desc="Benchmarks read operations as write rate increases.", minArgs=8,
+	            params="<num_readers> <num_writers> <size_bytes> " +
+	                   "<min_writes_sec> <max_writes_sec> <rate_step> " +
+	                   "<milliseconds> [<read_ip>:<read_port> ...]")
 	/** Benchmarks read operations as write rate increases.  */
 	public static void benchmarkReadWrite(String host, int port, String[] args)
 		throws TException, InterruptedException, ExecutionException {
-		if (args.length < 8) {
-			System.out.printf(
-				"benchmarkReadWrite() arguments:\n    " +
-				"<num_readers> <num_writers> <size_bytes> " +
-				"<min_writes_sec> <max_writes_sec> <rate_step> " +
-				"<milliseconds> [<read_ip>:<read_port> ...]\n"
-			);
-			System.exit(1);
-		}
 		int numReaders = Integer.parseInt(args[0]);
 		int numWriters = Integer.parseInt(args[1]);
 		int numBytes = Integer.parseInt(args[2]);
@@ -436,20 +406,19 @@ public class TestClient {
 			reader.close();
 	}
 
+	@TestMethod(desc="Benchmarks latency of clean/dirty reads and writes under configurable load.", minArgs=3,
+	            params="<size_bytes> <milliseconds> <num_busy_readers> {<busy_read_ip>:<busy_read_port> ...}")
 	/** Benchmarks read operations as write rate increases.  */
 	public static void benchmarkLatency(String host, int port, String[] args)
 		throws TException, InterruptedException, ExecutionException {
-		if (args.length < 3 || (Integer.parseInt(args[2]) > 0 && args.length < 4)) {
-			System.out.printf(
-				"benchmarkLatency() arguments:\n    " +
-				"<size_bytes> <milliseconds> <num_busy_readers> {<busy_read_ip>:<busy_read_port> ...}\n"
-			);
-			System.exit(1);
-		}
 		int numBytes = Integer.parseInt(args[0]);
 		int ms = Integer.parseInt(args[1]);
 		int numBusyReaders = Integer.parseInt(args[2]);
 		int numBusyReadServers = args.length - 3;
+		if (numBusyReaders > 0 && numBusyReadServers < 1) {
+			logger.info("benchmarkLatency(): no busy read servers specified.");
+			return;
+		}
 		String[] hosts = new String[numBusyReadServers];
 		int[] ports = new int[numBusyReadServers];
 		for (int i = 0; i < numBusyReadServers; i++) {
@@ -567,16 +536,22 @@ public class TestClient {
 
 	/** Prints the list of invokable methods. */
 	private static void printAvailableMethods() {
-		List<String> methods = new ArrayList<>();
+		List<Method> methods = new ArrayList<>();
 		for (Method method : TestClient.class.getMethods()) {
 			int modifiers = method.getModifiers();
 			if (Modifier.isPublic(modifiers) && Modifier.isStatic(modifiers) && !method.getName().equals("main"))
-				methods.add(method.getName());
+				methods.add(method);
 		}
-		Collections.sort(methods);
-		System.out.printf("Available client methods:\n");
-		for (String name : methods)
-			System.out.printf("    %s\n", name);
+		Collections.sort(methods, (m1, m2) -> m1.getName().compareTo(m2.getName()));
+		System.out.printf("------------------------\n");
+		System.out.printf("Available client methods\n");
+		System.out.printf("------------------------\n");
+		for (Method method : methods) {
+			TestMethod ann = method.getAnnotation(TestMethod.class);
+			System.out.printf("* %s %s\n", method.getName(), ann == null ? "" : ann.params());
+			if (ann != null && !ann.desc().isEmpty())
+				System.out.printf("    %s\n", ann.desc());
+		}
 	}
 
 	/** Runs a test. */
@@ -591,7 +566,11 @@ public class TestClient {
 		// run the test
 		try {
 			Method method = TestClient.class.getDeclaredMethod(testName, String.class, int.class, String[].class);
-			method.invoke(null, host, port, testArgs);
+			TestMethod ann = method.getAnnotation(TestMethod.class);
+			if (ann != null && testArgs.length < ann.minArgs())
+				System.out.printf("%s() arguments:\n    %s\n", method.getName(), ann.params());
+			else
+				method.invoke(null, host, port, testArgs);
 		} catch (InvocationTargetException e) {
 			logger.error("An error occurred during test execution.", e.getTargetException());
 		} catch (Exception e) {
