@@ -59,7 +59,10 @@ public class TestClient {
 		CraqClient client = new CraqClient(host, port);
 		client.connect();
 		long newVersion = client.write(value);
-		logger.info("write(): writing object {} ({})", value, newVersion >= 0 ? newVersion : "FAIL");
+		logger.info(
+			"write(): writing object {} ({})",
+			value, newVersion >= 0 ? "version " + newVersion : "FAIL"
+		);
 		client.close();
 	}
 
@@ -75,15 +78,30 @@ public class TestClient {
 		CraqClient client = new CraqClient(host, port);
 		client.connect();
 		long newVersion = client.write(value);
-		logger.info("writeBytes(): writing {}-byte object ({})", numBytes, newVersion >= 0 ? newVersion : "FAIL");
+		logger.info(
+			"writeBytes(): writing {}-byte object ({})",
+			numBytes, newVersion >= 0 ? "version " + newVersion : "FAIL"
+		);
 		client.close();
 	}
 
-	/** Returns a random string with the given number of bytes. */
-	private static String getRandomString(int numBytes) {
-		byte[] b = new byte[numBytes];
-		RANDOM.nextBytes(b);
-		return new String(b, StandardCharsets.UTF_8);
+	/** Basic test-and-set operation. */
+	public static void testAndSet(String host, int port, String[] args) throws TException {
+		if (args.length < 2) {
+			System.out.printf("testAndSet() arguments:\n    <value> <expectedVersion>\n");
+			System.exit(1);
+		}
+		String value = args[0];
+		long expectedVersion = Long.parseLong(args[1]);
+
+		CraqClient client = new CraqClient(host, port);
+		client.connect();
+		long newVersion = client.testAndSet(value, expectedVersion);
+		logger.info(
+			"testAndSet(): writing object {} for expected version {} ({})",
+			value, expectedVersion, newVersion >= 0 ? "now version " + newVersion : "FAIL"
+		);
+		client.close();
 	}
 
 	/** Basic read operation (strong consistency). */
@@ -125,22 +143,6 @@ public class TestClient {
 			logger.info("readEventualBounded(): null object");
 		else
 			logger.info("readEventualBounded(): read object {}", obj);
-		client.close();
-	}
-
-	public static void testAndSet(String host, int port, String[] args) throws TException {
-		if (args.length < 2) {
-			System.out.printf("testAndSet() arguments:\n    <requestVersion> <value>\n");
-			System.exit(1);
-		}
-
-		long requestVersion = Long.parseLong(args[0]);
-		String value = args[1];
-
-		CraqClient client = new CraqClient(host, port);
-		client.connect();
-		long newVersion = client.testAndSet(requestVersion, value);
-		logger.info("testAndSet(): testing object {} ({})", value, newVersion >= 0 ? newVersion : "FAIL");
 		client.close();
 	}
 
@@ -301,7 +303,7 @@ public class TestClient {
 		long newVersion = writers[0].write(value);
 		logger.info(
 			"benchmarkReadWrite(): wrote initial {}-byte object ({})",
-			numBytes, newVersion >= 0 ? newVersion : "FAIL"
+			numBytes, newVersion >= 0 ? "version " + newVersion : "FAIL"
 		);
 		if (newVersion < 0)
 			return;
@@ -377,6 +379,13 @@ public class TestClient {
 			writer.close();
 		for (CraqClient reader : readers)
 			reader.close();
+	}
+
+	/** Returns a random string with the given number of bytes. */
+	private static String getRandomString(int numBytes) {
+		byte[] b = new byte[numBytes];
+		RANDOM.nextBytes(b);
+		return new String(b, StandardCharsets.UTF_8);
 	}
 
 	/** Prints the list of invokable methods. */

@@ -22,9 +22,9 @@ service CraqService {
 
 	/** Writes a new value. */
 	Version write(1:CraqObject obj),
-	
+
 	/** Performs a test-and-set operation. **/
-	Version testAndSet(1:Version requestVersion, 2:CraqObject obj),
+	Version testAndSet(1:CraqObject obj, 2:Version expectedVersion),
 
 	// -------------------------------------------------------------------------
 	// Internal methods

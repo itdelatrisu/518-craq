@@ -70,14 +70,14 @@ public class CraqClient {
 		logger.debug("Connected to server at {}:{}", host, port);
 	}
 
-	/** Writes an object, returning success (true) or failure (false). */
+	/** Writes an object, returning the new object version or -1 upon failure. */
 	public long write(String value) throws TException {
 		CraqObject obj = new CraqObject();
 		obj.setValue(value.getBytes(StandardCharsets.UTF_8));
 		return server.write(obj);
 	}
 
-	/** Reads an object, returning null if the read failed for any reason. */
+	/** Reads an object, returning null upon failure. */
 	public ReadObject read(CraqConsistencyModel model, long versionBound) throws TException {
 		CraqObject obj = server.read(model, versionBound);
 		if (!obj.isSetValue())
@@ -88,11 +88,11 @@ public class CraqClient {
 		);
 	}
 
-	/** Reads an object, returning null if the read failed for any reason. */
-	public long testAndSet(long requestVersion, String value) throws TException {
+	/** Performs a test-and-set operation, returning the new object version or -1 upon failure. */
+	public long testAndSet(String value, long expectedVersion) throws TException {
 		CraqObject obj = new CraqObject();
 		obj.setValue(value.getBytes(StandardCharsets.UTF_8));
-		return server.testAndSet(requestVersion, obj);
+		return server.testAndSet(obj, expectedVersion);
 	}
 
 	/** Closes the server connection. */

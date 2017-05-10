@@ -54,8 +54,8 @@ public class CraqNode implements CraqService.Iface {
 	/** Object read-write lock. */
 	private final ReadWriteLock objectLock = new ReentrantReadWriteLock(true);
 
-	/** Test-and-set read-write lock */
-	private final ReadWriteLock testLock = new ReentrantReadWriteLock(true);
+	/** Test-and-set read-write lock. */
+	private final ReadWriteLock tasLock = new ReentrantReadWriteLock(true);
 
 	/** The latest known clean object version. */
 	private final AtomicLong latestCleanVersion = new AtomicLong(-1);
@@ -306,6 +306,28 @@ public class CraqNode implements CraqService.Iface {
 	public long write(CraqObject obj) throws TException {
 		logger.debug("[Node {}] Received write request from client...", chain.getIndex());
 
+		tasLock.readLock().lock();
+		try {
+			return write(obj, null);
+		} finally {
+			tasLock.readLock().unlock();
+		}
+	}
+
+	@Override
+	public long testAndSet(CraqObject obj, long expectedVersion) throws TException {
+		logger.debug("[Node {}] Received test-and-set request from client...", chain.getIndex());
+
+		tasLock.writeLock().lock();
+		try {
+			return write(obj, expectedVersion);
+		} finally {
+			tasLock.writeLock().unlock();
+		}
+	}
+
+	/** Handles a write. */
+	private long write(CraqObject obj, Long expectedVersion) throws TException {
 		// node hasn't initialized?
 		if (tailPool == null || successorPool == null)
 			return -1;
@@ -314,8 +336,13 @@ public class CraqNode implements CraqService.Iface {
 		if (!chain.isHead())
 			return -1;
 
-		testLock.readLock().lock();
-		try {
+		// for test-and-set operations...
+		if (expectedVersion != null) {
+			// reject if latest version is not the expected version or there are uncommitted writes
+			if (latestCleanVersion.get() != expectedVersion || latestVersion.get() != latestCleanVersion.get())
+				return -1;
+		}
+
 		// record new object version
 		long newVersion = latestVersion.incrementAndGet();
 		objects.put(newVersion, obj);
@@ -329,10 +356,8 @@ public class CraqNode implements CraqService.Iface {
 		long oldCleanVersion = latestCleanVersion.getAndUpdate(x -> x < newVersion ? newVersion : x);
 		if (newVersion > oldCleanVersion)
 			removeOldVersions(latestCleanVersion.get());
-		return latestCleanVersion.get();
-		} finally {
-			testLock.readLock().unlock();
-		}
+
+		return newVersion;
 	}
 
 	@Override
@@ -382,36 +407,6 @@ public class CraqNode implements CraqService.Iface {
 
 		// return latest clean version
 		return latestCleanVersion.get();
-	}
-
-	@Override
-	public long testAndSet(long requestVersion, CraqObject obj) throws TException {
-		// TODO
-		testLock.writeLock().lock();
-		try {
-			// if the requested version is the same as the latest clean version and there is no uncommited write
-			if (latestCleanVersion.get() == requestVersion && latestVersion.get() == latestCleanVersion.get()) {
-				// update version
-				latestVersion.getAndIncrement();
-				latestCleanVersion.getAndIncrement();
-				long newCleanVersion = latestCleanVersion.get();
-
-				objects.put(newCleanVersion, obj);
-
-				// send down chain
-				CraqService.Client successor = getPooledConnection(successorPool);
-				successor.writeVersioned(obj, newCleanVersion);
-				returnPooledConnection(successorPool, successor);
-
-				removeOldVersions(newCleanVersion);
-
-				return newCleanVersion;
-			}
-			return -1;
-		}
-		finally{
-			testLock.writeLock().unlock();
-		}
 	}
 
 	/** Starts the CRAQ server node. */
