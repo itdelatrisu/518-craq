@@ -129,19 +129,20 @@ public class TestClient {
 		client.close();
 	}
 
-	@TestMethod(desc="Benchmarks read operations.", minArgs=2,
-	            params="<num_clients> <milliseconds> {<additional_ip>:<additional_port> ...}")
+	@TestMethod(desc="Benchmarks read operations.", minArgs=3,
+	            params="<num_clients> <milliseconds> <trials> {<additional_ip>:<additional_port> ...}")
 	public static void benchmarkRead(String host, int port, String[] args)
-		throws TTransportException, InterruptedException, ExecutionException {
+		throws TException, InterruptedException, ExecutionException {
 		int numClients = Integer.parseInt(args[0]);
 		int ms = Integer.parseInt(args[1]);
-		int numServers = 1 + args.length - 2;
+		int trials = Integer.parseInt(args[2]);
+		int numServers = 1 + args.length - 3;
 		String[] hosts = new String[numServers];
 		hosts[0] = host;
 		int[] ports = new int[numServers];
 		ports[0] = port;
 		for (int i = 0; i < numServers - 1; i++) {
-			String[] s = args[i + 2].split(":");
+			String[] s = args[i + 3].split(":");
 			hosts[i + 1] = s[0];
 			ports[i + 1] = Integer.parseInt(s[1]);
 		}
@@ -154,33 +155,51 @@ public class TestClient {
 			clients[i].connect();
 		}
 
-		// begin execution
-		ExecutorService executor = Executors.newFixedThreadPool(numClients);
-		List<Future<Long>> futures = new ArrayList<>(numClients);
-		long startTime = System.nanoTime();
-		for (int i = 0; i < numClients; i++) {
-			CraqClient client = clients[i];
-			futures.add(executor.submit(() -> {
-				long ops = 0;
-				while (!Thread.currentThread().isInterrupted()) {
-					if (client.read(CraqConsistencyModel.STRONG, 0) != null)
-						ops++;
-				}
-				return ops;
-			}));
+		// check if any object is written...
+		if (clients[0].read(CraqConsistencyModel.STRONG, 0) == null) {
+			logger.info("benchmarkRead(): could not read object.");
+			return;
 		}
-		Thread.sleep(ms);
-		executor.shutdownNow();
-		long totalTime = System.nanoTime() - startTime;
 
-		// aggregate results
-		long ops = 0;
-		for (Future<Long> future : futures)
-			ops += future.get();
-		long opsPerSecond = Math.round(ops / (totalTime * 1e-9));
+		// run trials...
+		List<Long> throughputs = new ArrayList<>(trials);
+		for (int run = 0; run < trials; run++) {
+			// begin execution
+			ExecutorService executor = Executors.newFixedThreadPool(numClients);
+			List<Future<Long>> futures = new ArrayList<>(numClients);
+			long startTime = System.nanoTime();
+			for (int i = 0; i < numClients; i++) {
+				CraqClient client = clients[i];
+				futures.add(executor.submit(() -> {
+					long ops = 0;
+					while (!Thread.currentThread().isInterrupted()) {
+						if (client.read(CraqConsistencyModel.STRONG, 0) != null)
+							ops++;
+					}
+					return ops;
+				}));
+			}
+			Thread.sleep(ms);
+			executor.shutdownNow();
+			long totalTime = System.nanoTime() - startTime;
+
+			// aggregate results
+			long ops = 0;
+			for (Future<Long> future : futures)
+				ops += future.get();
+			long opsPerSecond = Math.round(ops / (totalTime * 1e-9));
+			throughputs.add(opsPerSecond);
+			logger.info(
+				"benchmarkRead(): ({}/{}) {} ops over {}ns using {} clients ({} ops/sec)",
+				run + 1, trials, ops, totalTime, numClients, opsPerSecond
+			);
+		}
 		logger.info(
-			"benchmarkRead(): {} ops over {}ns using {} clients ({} ops/sec)",
-			ops, totalTime, numClients, opsPerSecond
+			"benchmarkRead(): [avg] {} ops/sec, [1st] {} ops/sec, [med] {} ops/sec, [99th] {} ops/sec",
+			String.format("%.2f", throughputs.stream().mapToLong(Long::longValue).average().getAsDouble()),
+			getPercentile(throughputs, 1),
+			getPercentile(throughputs, 50),
+			getPercentile(throughputs, 99)
 		);
 
 		// clean up
@@ -188,13 +207,14 @@ public class TestClient {
 			client.close();
 	}
 
-	@TestMethod(desc="Benchmarks write operations.", minArgs=3,
-	            params="<num_clients> <size_bytes> <milliseconds>")
+	@TestMethod(desc="Benchmarks write operations.", minArgs=4,
+	            params="<num_clients> <size_bytes> <milliseconds> <trials>")
 	public static void benchmarkWrite(String host, int port, String[] args)
 		throws TTransportException, InterruptedException, ExecutionException {
 		int numClients = Integer.parseInt(args[0]);
 		int numBytes = Integer.parseInt(args[1]);
 		int ms = Integer.parseInt(args[2]);
+		int trials = Integer.parseInt(args[3]);
 
 		// connect to servers
 		CraqClient[] clients = new CraqClient[numClients];
@@ -203,33 +223,45 @@ public class TestClient {
 			clients[i].connect();
 		}
 
-		// begin execution
-		ExecutorService executor = Executors.newFixedThreadPool(numClients);
-		List<Future<Long>> futures = new ArrayList<>(numClients);
-		long startTime = System.nanoTime();
-		for (int i = 0; i < numClients; i++) {
-			CraqClient client = clients[i];
-			futures.add(executor.submit(() -> {
-				long ops = 0;
-				while (!Thread.currentThread().isInterrupted()) {
-					if (client.write(getRandomString(numBytes)) >= 0)
-						ops++;
-				}
-				return ops;
-			}));
-		}
-		Thread.sleep(ms);
-		executor.shutdownNow();
-		long totalTime = System.nanoTime() - startTime;
+		// run trials...
+		List<Long> throughputs = new ArrayList<>(trials);
+		for (int run = 0; run < trials; run++) {
+			// begin execution
+			ExecutorService executor = Executors.newFixedThreadPool(numClients);
+			List<Future<Long>> futures = new ArrayList<>(numClients);
+			long startTime = System.nanoTime();
+			for (int i = 0; i < numClients; i++) {
+				CraqClient client = clients[i];
+				futures.add(executor.submit(() -> {
+					long ops = 0;
+					while (!Thread.currentThread().isInterrupted()) {
+						if (client.write(getRandomString(numBytes)) >= 0)
+							ops++;
+					}
+					return ops;
+				}));
+			}
+			Thread.sleep(ms);
+			executor.shutdownNow();
+			long totalTime = System.nanoTime() - startTime;
 
-		// aggregate results
-		long ops = 0;
-		for (Future<Long> future : futures)
-			ops += future.get();
-		long opsPerSecond = Math.round(ops / (totalTime * 1e-9));
+			// aggregate results
+			long ops = 0;
+			for (Future<Long> future : futures)
+				ops += future.get();
+			long opsPerSecond = Math.round(ops / (totalTime * 1e-9));
+			throughputs.add(opsPerSecond);
+			logger.info(
+				"benchmarkWrite(): {} ops over {}ns using {} clients ({} ops/sec)",
+				ops, totalTime, numClients, opsPerSecond
+			);
+		}
 		logger.info(
-			"benchmarkWrite(): {} ops over {}ns using {} clients ({} ops/sec)",
-			ops, totalTime, numClients, opsPerSecond
+			"benchmarkWrite(): [avg] {} ops/sec, [1st] {} ops/sec, [med] {} ops/sec, [99th] {} ops/sec",
+			String.format("%.2f", throughputs.stream().mapToLong(Long::longValue).average().getAsDouble()),
+			getPercentile(throughputs, 1),
+			getPercentile(throughputs, 50),
+			getPercentile(throughputs, 99)
 		);
 
 		// clean up
@@ -237,50 +269,61 @@ public class TestClient {
 			client.close();
 	}
 
-	@TestMethod(desc="Benchmarks test-and-set operations.", minArgs=2,
-	            params="<size_bytes> <milliseconds>")
+	@TestMethod(desc="Benchmarks test-and-set operations.", minArgs=3,
+	            params="<size_bytes> <milliseconds> <trials>")
 	public static void benchmarkTestAndSet(String host, int port, String[] args)
 		throws TException, InterruptedException, ExecutionException {
 		int numBytes = Integer.parseInt(args[0]);
 		int ms = Integer.parseInt(args[1]);
+		int trials = Integer.parseInt(args[2]);
 
 		// connect to servers
 		CraqClient client = new CraqClient(host, port);
 		client.connect();
 
-		// write initial object (to get the current version)
-		long newVersion = client.write(getRandomString(numBytes));
-		logger.info(
-			"benchmarkTestAndSet(): wrote initial {}-byte object ({})",
-			numBytes, newVersion >= 0 ? "version " + newVersion : "FAIL"
-		);
-		if (newVersion < 0)
-			return;
-
-		// begin execution
-		ExecutorService executor = Executors.newFixedThreadPool(1);
-		long startTime = System.nanoTime();
-		Future<Long> future = executor.submit(() -> {
-			long ops = 0, version = newVersion;
-			while (!Thread.currentThread().isInterrupted()) {
-				long v = client.testAndSet(getRandomString(numBytes), version);
-				if (v >= 0) {
-					ops++;
-					version = v;
-				}
+		// run trials...
+		List<Long> throughputs = new ArrayList<>(trials);
+		for (int run = 0; run < trials; run++) {
+			// write initial object (to get the current version)
+			long newVersion = client.write(getRandomString(numBytes));
+			if (newVersion < 0) {
+				logger.info("benchmarkTestAndSet(): failed to write a {}-byte object.", numBytes);
+				return;
 			}
-			return ops;
-		});
-		Thread.sleep(ms);
-		executor.shutdownNow();
-		long totalTime = System.nanoTime() - startTime;
 
-		// aggregate results
-		long ops = future.get();
-		long opsPerSecond = Math.round(ops / (totalTime * 1e-9));
+			// begin execution
+			ExecutorService executor = Executors.newFixedThreadPool(1);
+			long startTime = System.nanoTime();
+			Future<Long> future = executor.submit(() -> {
+				long ops = 0, version = newVersion;
+				while (!Thread.currentThread().isInterrupted()) {
+					long v = client.testAndSet(getRandomString(numBytes), version);
+					if (v >= 0) {
+						ops++;
+						version = v;
+					}
+				}
+				return ops;
+			});
+			Thread.sleep(ms);
+			executor.shutdownNow();
+			long totalTime = System.nanoTime() - startTime;
+
+			// aggregate results
+			long ops = future.get();
+			long opsPerSecond = Math.round(ops / (totalTime * 1e-9));
+			throughputs.add(opsPerSecond);
+			logger.info(
+				"benchmarkTestAndSet(): {} ops over {}ns ({} ops/sec)",
+				ops, totalTime, opsPerSecond
+			);
+		}
 		logger.info(
-			"benchmarkTestAndSet(): {} ops over {}ns ({} ops/sec)",
-			ops, totalTime, opsPerSecond
+			"benchmarkTestAndSet(): [avg] {} ops/sec, [1st] {} ops/sec, [med] {} ops/sec, [99th] {} ops/sec",
+			String.format("%.2f", throughputs.stream().mapToLong(Long::longValue).average().getAsDouble()),
+			getPercentile(throughputs, 1),
+			getPercentile(throughputs, 50),
+			getPercentile(throughputs, 99)
 		);
 
 		// clean up
