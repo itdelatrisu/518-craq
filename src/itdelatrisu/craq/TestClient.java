@@ -520,10 +520,14 @@ public class TestClient {
 
 		// aggregate results
 		List<Long> latencies = future.get();
-		double avg = latencies.stream().mapToLong(Long::longValue).average().getAsDouble();
+		Collections.sort(latencies);
 		logger.info(
-			"benchmarkLatency(): performed {} {} over {}ms ({}ms avg. latency)",
-			latencies.size(), desc, ms, String.format("%.3f", avg * 1e-6)
+			"benchmarkLatency(): performed {} {} over {}ms ([avg] {}ms, [med] {}ms, [95th] {}ms, [99th] {}ms)",
+			latencies.size(), desc, ms,
+			String.format("%.3f", latencies.stream().mapToLong(Long::longValue).average().getAsDouble() * 1e-6),
+			String.format("%.3f", getPercentile(latencies, 50) * 1e-6),
+			String.format("%.3f", getPercentile(latencies, 95) * 1e-6),
+			String.format("%.3f", getPercentile(latencies, 99) * 1e-6)
 		);
 	}
 
@@ -532,6 +536,12 @@ public class TestClient {
 		byte[] b = new byte[numBytes];
 		RANDOM.nextBytes(b);
 		return new String(b, StandardCharsets.UTF_8);
+	}
+
+	/** Returns a value at the given percentile from the sorted list. */
+	private static <T> T getPercentile(List<T> list, int percentile) {
+		int index = (int) Math.ceil((percentile / 100f) * list.size()) - 1;
+		return list.get(index);
 	}
 
 	/** Prints the list of invokable methods. */
