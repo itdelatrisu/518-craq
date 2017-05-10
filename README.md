@@ -4,12 +4,7 @@ Implementation of the CRAQ system based on the
 by Jeff Terrace and Michael J. Freedman.
 
 ### Building
-Requires Java 8 and Maven:
-```
-$ sudo apt-get install default-jdk maven
-```
-
-To build:
+Requires Java 8 and Maven.
 ```
 $ mvn clean package
 ```
