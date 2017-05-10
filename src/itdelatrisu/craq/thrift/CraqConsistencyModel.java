@@ -17,7 +17,8 @@ import org.apache.thrift.TEnum;
 public enum CraqConsistencyModel implements org.apache.thrift.TEnum {
   STRONG(0),
   EVENTUAL(1),
-  EVENTUAL_BOUNDED(2);
+  EVENTUAL_BOUNDED(2),
+  DEBUG(3);
 
   private final int value;
 
@@ -44,6 +45,8 @@ public enum CraqConsistencyModel implements org.apache.thrift.TEnum {
         return EVENTUAL;
       case 2:
         return EVENTUAL_BOUNDED;
+      case 3:
+        return DEBUG;
       default:
         return null;
     }

@@ -208,38 +208,21 @@ public class CraqNode implements CraqService.Iface {
 
 		// node hasn't initialized?
 		if (!chain.isTail() && (tailPool == null || successorPool == null))
-			return new CraqObject();
+			throw new TException("Chain is not initialized!");
+
+		// running normal CR: fail if we're not the tail
+		if (crMode && !chain.isTail())
+			throw new TException("Cannot read from non-tail node in CR mode!");
 
 		// no objects stored?
 		if (objects.isEmpty())
 			return new CraqObject();
 
-		// running normal CR: fail if we're not the tail
-		if (crMode && !chain.isTail())
-			return new CraqObject();
-
-		// strong consistency?
-		if (model == CraqConsistencyModel.STRONG) {
+		switch (model) {
+		case STRONG:
 			if (latestVersion.get() > latestCleanVersion.get() && !chain.isTail()) {
 				// non-tail: latest known version isn't clean, send a version query
-				CraqService.Client tail = getPooledConnection(tailPool);
-				long tailVersion = tail.versionQuery();
-				returnPooledConnection(tailPool, tail);
-				if (tailVersion < 0)
-					return new CraqObject();  // no clean version yet
-				CraqObject obj = objects.get(tailVersion);
-				if (obj == null) {
-					// newer version already committed (old one erased),
-					// just return the latest clean version
-					objectLock.readLock().lock();
-					try {
-						obj = objects.get(latestCleanVersion.get());
-					} finally {
-						objectLock.readLock().unlock();
-					}
-				}
-				if (obj == null)
-					throw new TException("Returning null object after a version query!");
+				CraqObject obj = getObjectFromVersionQuery();
 				return copyObject(obj, true);
 			} else if (latestCleanVersion.get() < 0) {
 				// no clean version yet
@@ -261,16 +244,13 @@ public class CraqNode implements CraqService.Iface {
 				try {
 					CraqObject obj = objects.get(latestCleanVersion.get());
 					if (obj == null)
-						logger.error("Returning null object from a clean read!");
+						throw new TException("Returning null object from a clean read!");
 					return copyObject(obj, false);
 				} finally {
 					objectLock.readLock().unlock();
 				}
 			}
-		}
-
-		// eventual consistency?
-		else if (model == CraqConsistencyModel.EVENTUAL) {
+		case EVENTUAL:
 			// return latest known version
 			objectLock.readLock().lock();
 			try {
@@ -281,10 +261,7 @@ public class CraqNode implements CraqService.Iface {
 			} finally {
 				objectLock.readLock().unlock();
 			}
-		}
-
-		// bounded eventual consistency?
-		else if (model == CraqConsistencyModel.EVENTUAL_BOUNDED) {
+		case EVENTUAL_BOUNDED:
 			// return latest known version within the given bound
 			objectLock.readLock().lock();
 			try {
@@ -297,9 +274,15 @@ public class CraqNode implements CraqService.Iface {
 			} finally {
 				objectLock.readLock().unlock();
 			}
+		case DEBUG:
+			// make a version query
+			if (chain.isTail())
+				return new CraqObject();
+			CraqObject obj = getObjectFromVersionQuery();
+			return copyObject(obj, true);
+		default:
+			throw new TException("Internal error!");
 		}
-
-		throw new TException("Internal error!");
 	}
 
 	@Override
@@ -330,11 +313,11 @@ public class CraqNode implements CraqService.Iface {
 	private long write(CraqObject obj, Long expectedVersion) throws TException {
 		// node hasn't initialized?
 		if (tailPool == null || successorPool == null)
-			return -1;
+			throw new TException("Chain is not initialized!");
 
 		// can only write to head
 		if (!chain.isHead())
-			return -1;
+			throw new TException("Cannot write to non-head node.");
 
 		// for test-and-set operations...
 		if (expectedVersion != null) {
@@ -363,6 +346,10 @@ public class CraqNode implements CraqService.Iface {
 	@Override
 	public void writeVersioned(CraqObject obj, long version) throws TException {
 		logger.debug("[Node {}] Received write with version: {}", chain.getIndex(), version);
+
+		// head should not receive versioned writes
+		if (chain.isHead())
+			throw new TException("Cannot make a versioned write to the head!");
 
 		// add new object version
 		objects.put(version, obj);
@@ -403,10 +390,37 @@ public class CraqNode implements CraqService.Iface {
 
 		// only tail should receive version queries
 		if (!chain.isTail())
-			return -1;
+			throw new TException("Cannot make a version query to a non-tail node!");
 
 		// return latest clean version
 		return latestCleanVersion.get();
+	}
+
+	/** Makes a version query to the tail and returns the appropriate object. */
+	private CraqObject getObjectFromVersionQuery() throws TException {
+		// send a version query
+		CraqService.Client tail = getPooledConnection(tailPool);
+		long tailVersion = tail.versionQuery();
+		returnPooledConnection(tailPool, tail);
+
+		// no clean version yet?
+		if (tailVersion < 0)
+			return new CraqObject();
+
+		// retrieve the object
+		CraqObject obj = objects.get(tailVersion);
+		if (obj == null) {
+			// newer version already committed (old one erased), return the latest clean version
+			objectLock.readLock().lock();
+			try {
+				obj = objects.get(latestCleanVersion.get());
+			} finally {
+				objectLock.readLock().unlock();
+			}
+		}
+		if (obj == null)
+			throw new TException("Returning null object after a version query!");
+		return obj;
 	}
 
 	/** Starts the CRAQ server node. */

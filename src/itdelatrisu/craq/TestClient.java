@@ -1,8 +1,5 @@
 package itdelatrisu.craq;
 
-import itdelatrisu.craq.CraqClient.ReadObject;
-import itdelatrisu.craq.thrift.CraqConsistencyModel;
-
 import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.lang.reflect.Modifier;
@@ -12,16 +9,19 @@ import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
 import java.util.Random;
+import java.util.concurrent.Callable;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import java.util.concurrent.TimeUnit;
 
 import org.apache.thrift.TException;
 import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import itdelatrisu.craq.CraqClient.ReadObject;
+import itdelatrisu.craq.thrift.CraqConsistencyModel;
 
 /** CRAQ client tests. */
 public class TestClient {
@@ -189,7 +189,7 @@ public class TestClient {
 				return ops;
 			}));
 		}
-		executor.awaitTermination(ms, TimeUnit.MILLISECONDS);
+		Thread.sleep(ms);
 		executor.shutdownNow();
 		long totalTime = System.nanoTime() - startTime;
 
@@ -202,6 +202,8 @@ public class TestClient {
 			"benchmarkRead(): {} ops over {}ns using {} clients ({} ops/sec)",
 			ops, totalTime, numClients, opsPerSecond
 		);
+
+		// clean up
 		for (CraqClient client : clients)
 			client.close();
 	}
@@ -240,7 +242,7 @@ public class TestClient {
 				return ops;
 			}));
 		}
-		executor.awaitTermination(ms, TimeUnit.MILLISECONDS);
+		Thread.sleep(ms);
 		executor.shutdownNow();
 		long totalTime = System.nanoTime() - startTime;
 
@@ -253,6 +255,8 @@ public class TestClient {
 			"benchmarkWrite(): {} ops over {}ns using {} clients ({} ops/sec)",
 			ops, totalTime, numClients, opsPerSecond
 		);
+
+		// clean up
 		for (CraqClient client : clients)
 			client.close();
 	}
@@ -295,7 +299,7 @@ public class TestClient {
 			}
 			return ops;
 		});
-		executor.awaitTermination(ms, TimeUnit.MILLISECONDS);
+		Thread.sleep(ms);
 		executor.shutdownNow();
 		long totalTime = System.nanoTime() - startTime;
 
@@ -306,6 +310,8 @@ public class TestClient {
 			"benchmarkTestAndSet(): {} ops over {}ns ({} ops/sec)",
 			ops, totalTime, opsPerSecond
 		);
+
+		// clean up
 		client.close();
 	}
 
@@ -400,7 +406,7 @@ public class TestClient {
 					return new ReadStats(reads, clean, dirty);
 				}));
 			}
-			executor.awaitTermination(ms, TimeUnit.MILLISECONDS);
+			Thread.sleep(ms);
 			executor.shutdownNow();
 			long totalTime = System.nanoTime() - startTime;
 
@@ -427,10 +433,134 @@ public class TestClient {
 			Thread.sleep(200);
 		}
 
+		// clean up
 		for (CraqClient writer : writers)
 			writer.close();
 		for (CraqClient reader : readers)
 			reader.close();
+	}
+
+	/** Benchmarks read operations as write rate increases.  */
+	public static void benchmarkLatency(String host, int port, String[] args)
+		throws TException, InterruptedException, ExecutionException {
+		if (args.length < 3 || (Integer.parseInt(args[2]) > 0 && args.length < 4)) {
+			System.out.printf(
+				"benchmarkLatency() arguments:\n    " +
+				"<size_bytes> <milliseconds> <num_busy_readers> {<busy_read_ip>:<busy_read_port> ...}\n"
+			);
+			System.exit(1);
+		}
+		int numBytes = Integer.parseInt(args[0]);
+		int ms = Integer.parseInt(args[1]);
+		int numBusyReaders = Integer.parseInt(args[2]);
+		String value = getRandomString(numBytes);
+		int numBusyReadServers = args.length - 3;
+		String[] hosts = new String[numBusyReadServers];
+		int[] ports = new int[numBusyReadServers];
+		for (int i = 0; i < numBusyReadServers; i++) {
+			String[] s = args[i + 3].split(":");
+			hosts[i] = s[0];
+			ports[i] = Integer.parseInt(s[1]);
+		}
+
+		// connect to servers
+		CraqClient client = new CraqClient(host, port);
+		client.connect();
+		CraqClient[] readers = new CraqClient[numBusyReaders];
+		for (int i = 0; i < numBusyReaders; i++) {
+			int readServerIndex = i % numBusyReadServers;
+			readers[i] = new CraqClient(hosts[readServerIndex], ports[readServerIndex]);
+			readers[i].connect();
+		}
+
+		// write initial object
+		long newVersion = client.write(value);
+		logger.info(
+			"benchmarkLatency(): wrote initial {}-byte object ({})",
+			numBytes, newVersion >= 0 ? "version " + newVersion : "FAIL"
+		);
+		if (newVersion < 0)
+			return;
+
+		// begin busy reading
+		ExecutorService busyExecutor = null;
+		if (numBusyReaders > 0) {
+			logger.info("benchmarkLatency(): spawning {} busy readers...", numBusyReaders);
+			busyExecutor = Executors.newFixedThreadPool(numBusyReaders);
+			for (int i = 0; i < numBusyReaders; i++) {
+				CraqClient reader = readers[i];
+				busyExecutor.execute(() -> {
+					try {
+						while (!Thread.currentThread().isInterrupted())
+							reader.read(CraqConsistencyModel.STRONG, 0);
+					} catch (Exception e) {
+						if (!Thread.currentThread().isInterrupted())
+							logger.error("Error while busy reading!", e);
+					}
+				});
+			}
+			Thread.sleep(1000);  // wait before benchmarking
+		}
+
+		// start benchmarking
+		benchmarkLatency("clean reads", client, ms, () -> {
+			List<Long> latencies = new ArrayList<Long>();
+			while (!Thread.currentThread().isInterrupted()) {
+				long start = System.nanoTime();
+				ReadObject obj = client.read(CraqConsistencyModel.STRONG, 0);
+				long end = System.nanoTime();
+				if (obj != null && obj.dirty != null && !obj.dirty)
+					latencies.add(end - start);
+			}
+			return latencies;
+		});
+		benchmarkLatency("dirty reads", client, ms, () -> {
+			List<Long> latencies = new ArrayList<Long>();
+			while (!Thread.currentThread().isInterrupted()) {
+				long start = System.nanoTime();
+				ReadObject obj = client.read(CraqConsistencyModel.DEBUG, 0);
+				long end = System.nanoTime();
+				if (obj != null && obj.dirty != null && obj.dirty)
+					latencies.add(end - start);
+			}
+			return latencies;
+		});
+		benchmarkLatency("writes", client, ms, () -> {
+			List<Long> latencies = new ArrayList<Long>();
+			while (!Thread.currentThread().isInterrupted()) {
+				long start = System.nanoTime();
+				long version = client.write(value);
+				long end = System.nanoTime();
+				if (version >= 0)
+					latencies.add(end - start);
+			}
+			return latencies;
+		});
+
+		// clean up
+		if (busyExecutor != null)
+			busyExecutor.shutdownNow();
+		client.close();
+		for (CraqClient reader : readers)
+			reader.close();
+	}
+
+	/** Runs a latency benchmark using the given task. */
+	private static void benchmarkLatency(String desc, CraqClient client, int ms, Callable<List<Long>> task)
+		throws InterruptedException, ExecutionException {
+		// begin execution
+		ExecutorService executor = Executors.newSingleThreadExecutor();
+		Future<List<Long>> future = executor.submit(task);
+		Thread.sleep(ms);
+		executor.shutdownNow();
+
+		// aggregate results
+		List<Long> latencies = future.get();
+		double avg = latencies.stream().mapToLong(Long::longValue).average().getAsDouble();
+		logger.info(
+			"benchmarkLatency(): performed {} {} over {}ms ({}ms avg. latency)",
+			latencies.size(), desc, ms, String.format("%.3f", avg * 1e-6)
+		);
 	}
 
 	/** Returns a random string with the given number of bytes. */

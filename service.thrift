@@ -4,7 +4,7 @@ namespace java itdelatrisu.craq.thrift
 typedef i64 Version
 
 /** Consistency models. */
-enum CraqConsistencyModel { STRONG, EVENTUAL, EVENTUAL_BOUNDED }
+enum CraqConsistencyModel { STRONG, EVENTUAL, EVENTUAL_BOUNDED, DEBUG }
 
 /** Object envelope. */
 struct CraqObject {
