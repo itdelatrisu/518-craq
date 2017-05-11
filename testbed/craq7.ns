@@ -41,13 +41,13 @@ set laneg [$ns make-lan "$nodeE $nodeG " 100Mb 0ms]
 
 set lanfg [$ns make-lan "$nodeF $nodeG " 100Mb 0ms]
 
-set lanca [$ns make-lan "$nodeClient $nodeA " 100Mb 0ms]
-set lancb [$ns make-lan "$nodeClient $nodeB " 100Mb 0ms]
-set lancc [$ns make-lan "$nodeClient $nodeC " 100Mb 0ms]
-set lancd [$ns make-lan "$nodeClient $nodeD " 100Mb 0ms]
-set lance [$ns make-lan "$nodeClient $nodeE " 100Mb 0ms]
-set lancf [$ns make-lan "$nodeClient $nodeF " 100Mb 0ms]
-set lancg [$ns make-lan "$nodeClient $nodeG " 100Mb 0ms]
+set lanclienta [$ns make-lan "$nodeClient $nodeA " 100Mb 0ms]
+set lanclientb [$ns make-lan "$nodeClient $nodeB " 100Mb 0ms]
+set lanclientc [$ns make-lan "$nodeClient $nodeC " 100Mb 0ms]
+set lanclientd [$ns make-lan "$nodeClient $nodeD " 100Mb 0ms]
+set lancliente [$ns make-lan "$nodeClient $nodeE " 100Mb 0ms]
+set lanclientf [$ns make-lan "$nodeClient $nodeF " 100Mb 0ms]
+set lanclientg [$ns make-lan "$nodeClient $nodeG " 100Mb 0ms]
 
 tb-set-node-os $nodeA UBUNTU16-64-STD
 tb-set-node-os $nodeB UBUNTU16-64-STD
