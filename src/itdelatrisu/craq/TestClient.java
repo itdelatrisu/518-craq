@@ -27,6 +27,10 @@ import itdelatrisu.craq.thrift.CraqConsistencyModel;
 public class TestClient {
 	private static final Logger logger = LoggerFactory.getLogger(TestClient.class);
 
+	/** Number of additional trials to run in benchmarks, with this number of
+	    initial trials discarded (to avoid skew from JIT optimization). */
+	private static final int WARMUP_TRIALS = 2;
+
 	/** RNG instance. */
 	private static final Random RANDOM = new Random();
 
@@ -163,7 +167,7 @@ public class TestClient {
 
 		// run trials...
 		List<Long> throughputs = new ArrayList<>(trials);
-		for (int run = 0; run < trials; run++) {
+		for (int run = 0; run < trials + WARMUP_TRIALS; run++) {
 			// begin execution
 			ExecutorService executor = Executors.newFixedThreadPool(numClients);
 			List<Future<Long>> futures = new ArrayList<>(numClients);
@@ -188,10 +192,12 @@ public class TestClient {
 			for (Future<Long> future : futures)
 				ops += future.get();
 			long opsPerSecond = Math.round(ops / (totalTime * 1e-9));
+			if (run < WARMUP_TRIALS)
+				continue;
 			throughputs.add(opsPerSecond);
 			logger.info(
 				"benchmarkRead(): ({}/{}) {} ops over {}ns using {} clients ({} ops/sec)",
-				run + 1, trials, ops, totalTime, numClients, opsPerSecond
+				run + 1 - WARMUP_TRIALS, trials, ops, totalTime, numClients, opsPerSecond
 			);
 		}
 		Collections.sort(throughputs);
@@ -226,7 +232,7 @@ public class TestClient {
 
 		// run trials...
 		List<Long> throughputs = new ArrayList<>(trials);
-		for (int run = 0; run < trials; run++) {
+		for (int run = 0; run < trials + WARMUP_TRIALS; run++) {
 			// begin execution
 			ExecutorService executor = Executors.newFixedThreadPool(numClients);
 			List<Future<Long>> futures = new ArrayList<>(numClients);
@@ -251,10 +257,12 @@ public class TestClient {
 			for (Future<Long> future : futures)
 				ops += future.get();
 			long opsPerSecond = Math.round(ops / (totalTime * 1e-9));
+			if (run < WARMUP_TRIALS)
+				continue;
 			throughputs.add(opsPerSecond);
 			logger.info(
-				"benchmarkWrite(): {} ops over {}ns using {} clients ({} ops/sec)",
-				ops, totalTime, numClients, opsPerSecond
+				"benchmarkWrite(): ({}/{}) {} ops over {}ns using {} clients ({} ops/sec)",
+				run + 1 - WARMUP_TRIALS, trials, ops, totalTime, numClients, opsPerSecond
 			);
 		}
 		Collections.sort(throughputs);
@@ -285,7 +293,7 @@ public class TestClient {
 
 		// run trials...
 		List<Long> throughputs = new ArrayList<>(trials);
-		for (int run = 0; run < trials; run++) {
+		for (int run = 0; run < trials + WARMUP_TRIALS; run++) {
 			// write initial object (to get the current version)
 			long newVersion = client.write(getRandomString(numBytes));
 			if (newVersion < 0) {
@@ -314,10 +322,12 @@ public class TestClient {
 			// aggregate results
 			long ops = future.get();
 			long opsPerSecond = Math.round(ops / (totalTime * 1e-9));
+			if (run < WARMUP_TRIALS)
+				continue;
 			throughputs.add(opsPerSecond);
 			logger.info(
-				"benchmarkTestAndSet(): {} ops over {}ns ({} ops/sec)",
-				ops, totalTime, opsPerSecond
+				"benchmarkTestAndSet(): ({}/{}) {} ops over {}ns ({} ops/sec)",
+				run + 1 - WARMUP_TRIALS, ops, totalTime, opsPerSecond
 			);
 		}
 		Collections.sort(throughputs);
