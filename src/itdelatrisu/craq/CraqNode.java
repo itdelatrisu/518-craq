@@ -1,9 +1,5 @@
 package itdelatrisu.craq;
 
-import itdelatrisu.craq.thrift.CraqConsistencyModel;
-import itdelatrisu.craq.thrift.CraqObject;
-import itdelatrisu.craq.thrift.CraqService;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -19,15 +15,19 @@ import org.apache.thrift.TException;
 import org.apache.thrift.protocol.TBinaryProtocol;
 import org.apache.thrift.protocol.TProtocol;
 import org.apache.thrift.server.TServer;
-import org.apache.thrift.server.TThreadPoolServer;
+import org.apache.thrift.server.TThreadedSelectorServer;
 import org.apache.thrift.transport.TFramedTransport;
-import org.apache.thrift.transport.TServerSocket;
-import org.apache.thrift.transport.TServerTransport;
+import org.apache.thrift.transport.TNonblockingServerSocket;
+import org.apache.thrift.transport.TNonblockingServerTransport;
 import org.apache.thrift.transport.TSocket;
 import org.apache.thrift.transport.TTransport;
 import org.apache.thrift.transport.TTransportException;
 import org.slf4j.Logger;
 import org.slf4j.LoggerFactory;
+
+import itdelatrisu.craq.thrift.CraqConsistencyModel;
+import itdelatrisu.craq.thrift.CraqObject;
+import itdelatrisu.craq.thrift.CraqService;
 
 /** CRAQ server node. */
 public class CraqNode implements CraqService.Iface {
@@ -163,15 +163,15 @@ public class CraqNode implements CraqService.Iface {
 	/** Starts the Thrift server. */
 	@SuppressWarnings({ "rawtypes", "unchecked" })
 	private void runServer(int port) throws TTransportException {
-		TServerTransport serverTransport = new TServerSocket(port);
+		TNonblockingServerTransport serverTransport = new TNonblockingServerSocket(port);
 		CraqService.Processor processor = new CraqService.Processor(this);
 
-		TServer server = new TThreadPoolServer(
-			new TThreadPoolServer
+		TServer server = new TThreadedSelectorServer(
+			new TThreadedSelectorServer
 				.Args(serverTransport)
 				.processor(processor)
-				.inputTransportFactory(new TFramedTransport.Factory())
-				.outputTransportFactory(new TFramedTransport.Factory())
+				.protocolFactory(new TBinaryProtocol.Factory())
+				.transportFactory(new TFramedTransport.Factory())
 		);
 		logger.info("Starting Thrift server on port {}...", port);
 		server.serve();
