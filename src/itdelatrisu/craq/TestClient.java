@@ -333,7 +333,7 @@ public class TestClient {
 			throughputs.add(opsPerSecond);
 			logger.info(
 				"benchmarkTestAndSet(): ({}/{}) {} ops over {}ns ({} ops/sec)",
-				run + 1 - WARMUP_TRIALS, ops, totalTime, opsPerSecond
+				run + 1 - WARMUP_TRIALS, trials, ops, totalTime, opsPerSecond
 			);
 		}
 		Collections.sort(throughputs);
