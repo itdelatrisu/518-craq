@@ -1,0 +1,73 @@
+# This is a simple ns script. Comments start with #.
+set ns [new Simulator]
+source tb_compat.tcl
+
+set nodeA [$ns node]
+set nodeB [$ns node]
+set nodeC [$ns node]
+set nodeD [$ns node]
+set nodeE [$ns node]
+set nodeF [$ns node]
+set nodeG [$ns node]
+set nodeClient [$ns node]
+
+#set link0 [$ns duplex-link $nodeB $nodeA 30Mb 50ms DropTail]
+#tb-set-link-loss $link0 0.01
+
+set lanab [$ns make-lan "$nodeA $nodeB " 100Mb 0ms]
+set lanac [$ns make-lan "$nodeA $nodeC " 100Mb 0ms]
+set lanad [$ns make-lan "$nodeA $nodeD " 100Mb 0ms]
+set lanae [$ns make-lan "$nodeA $nodeE " 100Mb 0ms]
+set lanaf [$ns make-lan "$nodeA $nodeF " 100Mb 0ms]
+set lanag [$ns make-lan "$nodeA $nodeG " 100Mb 0ms]
+
+set lanbc [$ns make-lan "$nodeB $nodeC " 100Mb 0ms]
+set lanbd [$ns make-lan "$nodeB $nodeD " 100Mb 0ms]
+set lanbe [$ns make-lan "$nodeB $nodeE " 100Mb 0ms]
+set lanbf [$ns make-lan "$nodeB $nodeF " 100Mb 0ms]
+set lanbg [$ns make-lan "$nodeB $nodeG " 100Mb 0ms]
+
+set lancd [$ns make-lan "$nodeC $nodeD " 100Mb 0ms]
+set lance [$ns make-lan "$nodeC $nodeE " 100Mb 0ms]
+set lancf [$ns make-lan "$nodeC $nodeF " 100Mb 0ms]
+set lancg [$ns make-lan "$nodeC $nodeG " 100Mb 0ms]
+
+set lande [$ns make-lan "$nodeD $nodeE " 100Mb 0ms]
+set landf [$ns make-lan "$nodeD $nodeF " 100Mb 0ms]
+set landg [$ns make-lan "$nodeD $nodeG " 100Mb 0ms]
+
+set lanef [$ns make-lan "$nodeE $nodeF " 100Mb 0ms]
+set laneg [$ns make-lan "$nodeE $nodeG " 100Mb 0ms]
+
+set lanfg [$ns make-lan "$nodeF $nodeG " 100Mb 0ms]
+
+set lanca [$ns make-lan "$nodeClient $nodeA " 100Mb 0ms]
+set lancb [$ns make-lan "$nodeClient $nodeB " 100Mb 0ms]
+set lancc [$ns make-lan "$nodeClient $nodeC " 100Mb 0ms]
+set lancd [$ns make-lan "$nodeClient $nodeD " 100Mb 0ms]
+set lance [$ns make-lan "$nodeClient $nodeE " 100Mb 0ms]
+set lancf [$ns make-lan "$nodeClient $nodeF " 100Mb 0ms]
+set lancg [$ns make-lan "$nodeClient $nodeG " 100Mb 0ms]
+
+tb-set-node-os $nodeA UBUNTU16-64-STD
+tb-set-node-os $nodeB UBUNTU16-64-STD
+tb-set-node-os $nodeC UBUNTU16-64-STD
+tb-set-node-os $nodeD UBUNTU16-64-STD
+tb-set-node-os $nodeE UBUNTU16-64-STD
+tb-set-node-os $nodeF UBUNTU16-64-STD
+tb-set-node-os $nodeG UBUNTU16-64-STD
+tb-set-node-os $nodeClient UBUNTU16-64-STD
+
+tb-set-hardware $nodeA pc3000
+tb-set-hardware $nodeB pc3000
+tb-set-hardware $nodeC pc3000
+tb-set-hardware $nodeD pc3000
+tb-set-hardware $nodeE pc3000
+tb-set-hardware $nodeF pc3000
+tb-set-hardware $nodeG pc3000
+tb-set-hardware $nodeClient d710
+
+$ns rtproto Static
+
+# Go!
+$ns run
