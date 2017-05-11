@@ -29,7 +29,7 @@ public class TestClient {
 
 	/** Number of additional trials to run in benchmarks, with this number of
 	    initial trials discarded (to avoid skew from JIT optimization). */
-	private static final int WARMUP_TRIALS = 2;
+	private static final int WARMUP_TRIALS = 5;
 
 	/** RNG instance. */
 	private static final Random RANDOM = new Random();
@@ -192,8 +192,10 @@ public class TestClient {
 			for (Future<Long> future : futures)
 				ops += future.get();
 			long opsPerSecond = Math.round(ops / (totalTime * 1e-9));
-			if (run < WARMUP_TRIALS)
+			if (run < WARMUP_TRIALS) {
+				logger.info("benchmarkRead(): ({}/{}) running warm-up trial...", run + 1, WARMUP_TRIALS);
 				continue;
+			}
 			throughputs.add(opsPerSecond);
 			logger.info(
 				"benchmarkRead(): ({}/{}) {} ops over {}ns using {} clients ({} ops/sec)",
@@ -257,8 +259,10 @@ public class TestClient {
 			for (Future<Long> future : futures)
 				ops += future.get();
 			long opsPerSecond = Math.round(ops / (totalTime * 1e-9));
-			if (run < WARMUP_TRIALS)
+			if (run < WARMUP_TRIALS) {
+				logger.info("benchmarkWrite(): ({}/{}) running warm-up trial...", run + 1, WARMUP_TRIALS);
 				continue;
+			}
 			throughputs.add(opsPerSecond);
 			logger.info(
 				"benchmarkWrite(): ({}/{}) {} ops over {}ns using {} clients ({} ops/sec)",
@@ -322,8 +326,10 @@ public class TestClient {
 			// aggregate results
 			long ops = future.get();
 			long opsPerSecond = Math.round(ops / (totalTime * 1e-9));
-			if (run < WARMUP_TRIALS)
+			if (run < WARMUP_TRIALS) {
+				logger.info("benchmarkTestAndSet(): ({}/{}) running warm-up trial...", run + 1, WARMUP_TRIALS);
 				continue;
+			}
 			throughputs.add(opsPerSecond);
 			logger.info(
 				"benchmarkTestAndSet(): ({}/{}) {} ops over {}ns ({} ops/sec)",
